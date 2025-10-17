@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import MapRealtime from "../../components/shared/MapRealtime";
 import ReportFeed from "../../components/admin/ReportFeed";
-import AttendanceMap from "../../components/shared/AttendanceMap";
 import RouteAssignment from "../../components/admin/RouteAssignment";
 import AdminAlert from "../../components/admin/AdminAlert";
 import AdminAlertCenter from "../../components/admin/AdminAlertCenter";
@@ -200,13 +199,6 @@ export default function AdminDashboard() {
             <span className="font-semibold">📍 Attendance History</span>
           </Link>
           <Link
-            to="/admin/attendance-map"
-            className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-          >
-            <Map className="w-5 h-5" />
-            <span className="font-semibold">🗺️ Attendance Map</span>
-          </Link>
-          <Link
             to="/admin/incidents"
             className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
@@ -248,7 +240,6 @@ export default function AdminDashboard() {
       {/* Core Modules */}
       <MapRealtime />
       <ReportFeed />
-      <AttendanceMap />
       <RouteAssignment />
       <AdminAlert />
       <RouteStatusAlert />
