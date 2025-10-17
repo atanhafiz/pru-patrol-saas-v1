@@ -18,9 +18,7 @@ export default function GuardDashboard() {
   const [incidents, setIncidents] = useState(0);
   const [lastCheck, setLastCheck] = useState(null);
   const [chartData, setChartData] = useState([]);
-  const [guardName, setGuardName] = useState(localStorage.getItem("guardName") || "");
-  const [plateNo, setPlateNo] = useState(localStorage.getItem("plateNo") || "");
-  const [showProfileForm, setShowProfileForm] = useState(false);
+  const guardName = localStorage.getItem("guardName") || "Guard";
 
   const fetchData = async () => {
     const [
@@ -63,13 +61,6 @@ export default function GuardDashboard() {
     setIncidents(incCount || 0);
   };
 
-  const handleProfileUpdate = (e) => {
-    e.preventDefault();
-    localStorage.setItem("guardName", guardName);
-    localStorage.setItem("plateNo", plateNo);
-    setShowProfileForm(false);
-    alert("✅ Profile updated successfully!");
-  };
 
   useEffect(() => {
     fetchData();
@@ -105,73 +96,13 @@ export default function GuardDashboard() {
 
   return (
     <div className="min-h-screen bg-soft p-6">
-      <motion.div
-        className="flex justify-between items-center mb-8"
+      <motion.h1
+        className="text-3xl font-bold text-primary mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-3xl font-bold text-primary">Guard Dashboard</h1>
-        <button
-          onClick={() => setShowProfileForm(!showProfileForm)}
-          className="bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition"
-        >
-          {guardName ? `👤 ${guardName}` : "⚙️ Setup Profile"}
-        </button>
-      </motion.div>
-
-      {/* Profile Setup Form */}
-      {showProfileForm && (
-        <motion.div
-          className="bg-white rounded-2xl shadow-md p-6 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h3 className="text-xl font-semibold text-primary mb-4">Guard Profile Setup</h3>
-          <form onSubmit={handleProfileUpdate} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Guard Name
-              </label>
-              <input
-                type="text"
-                value={guardName}
-                onChange={(e) => setGuardName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Plate Number
-              </label>
-              <input
-                type="text"
-                value={plateNo}
-                onChange={(e) => setPlateNo(e.target.value)}
-                placeholder="Enter your plate number"
-                className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none"
-                required
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="bg-accent text-white px-6 py-2 rounded-xl hover:bg-accent/90 transition"
-              >
-                Save Profile
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowProfileForm(false)}
-                className="bg-gray-500 text-white px-6 py-2 rounded-xl hover:bg-gray-600 transition"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </motion.div>
-      )}
+        Guard Dashboard - {guardName}
+      </motion.h1>
 
       {/* Summary cards */}
       <motion.div
