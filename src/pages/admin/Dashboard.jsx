@@ -12,6 +12,7 @@ import {
   Users,
   Map,
   Trash2,
+  MapPin,
 } from "lucide-react";
 import MapRealtime from "../../components/shared/MapRealtime";
 import ReportFeed from "../../components/admin/ReportFeed";
@@ -20,6 +21,19 @@ import RouteAssignment from "../../components/admin/RouteAssignment";
 import AdminAlert from "../../components/admin/AdminAlert";
 import AdminAlertCenter from "../../components/admin/AdminAlertCenter";
 import RouteStatusAlert from "../../components/admin/RouteStatusAlert";
+
+// ✅ Reusable component for Live Guard Map button
+function LiveGuardMapButton() {
+  return (
+    <Link
+      to="/admin/map"
+      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow transition"
+    >
+      <MapPin className="w-4 h-4" />
+      Live Guard Tracking Map
+    </Link>
+  );
+}
 
 export default function AdminDashboard() {
   // 🧾 Activity Log State
@@ -164,13 +178,7 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <Link
-            to="/admin/map"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-md hover:shadow-lg"
-          >
-            <Map className="w-4 h-4" />
-            🛰️ View Live Guard Map
-          </Link>
+          <LiveGuardMapButton />
           <AdminAlertCenter />
         </div>
       </motion.div>
@@ -183,13 +191,7 @@ export default function AdminDashboard() {
         transition={{ delay: 0.1, duration: 0.6 }}
       >
         <div className="flex flex-wrap gap-4">
-          <Link
-            to="/admin/map"
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-          >
-            <Map className="w-5 h-5" />
-            <span className="font-semibold">🛰️ Live Guard Tracking</span>
-          </Link>
+          <LiveGuardMapButton />
           <Link
             to="/admin/attendance-history"
             className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
