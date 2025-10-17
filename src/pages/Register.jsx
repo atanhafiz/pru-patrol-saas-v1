@@ -41,6 +41,7 @@ export default function Register() {
       if (role === "guard") {
         localStorage.setItem("guardName", guardName || fullName);
         localStorage.setItem("plateNo", plateNo || "Unknown");
+        console.log("✅ localStorage updated:", guardName || fullName, plateNo || "Unknown");
       }
 
       setMsg("✅ Registration complete. Redirecting...");

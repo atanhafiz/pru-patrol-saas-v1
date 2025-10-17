@@ -71,6 +71,7 @@ export default function SelfieCheckIn() {
         // Save to localStorage for future use
         localStorage.setItem("guardName", guardName);
         localStorage.setItem("plateNo", plateNo);
+        console.log("✅ localStorage updated:", guardName, plateNo);
       }
 
       const fileName = `attendance/${guardName}_${Date.now()}.png`;
