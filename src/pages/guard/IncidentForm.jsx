@@ -10,6 +10,7 @@ export default function IncidentForm() {
   const [photo, setPhoto] = useState(null);
   const [preview, setPreview] = useState("");
   const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -19,8 +20,16 @@ export default function IncidentForm() {
     }
   };
 
+  const resetForm = () => {
+    setDescription("");
+    setPhoto(null);
+    setPreview("");
+    setStatus("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     setStatus("Uploading...");
 
     // Debug logs
@@ -31,24 +40,30 @@ export default function IncidentForm() {
       const guardName = localStorage.getItem("guardName") || "-";
       const plateNo = localStorage.getItem("plateNo") || "-";
 
-      let photoUrl = "";
+      let photoUrl = null;
+      
+      // Upload photo if exists
       if (photo) {
+        setStatus("Uploading photo...");
         const filePath = `incidents/${guardName}_${Date.now()}_${photo.name}`;
-        const { error: uploadErr } = await supabase.storage
+        const { data: uploadData, error: uploadErr } = await supabase.storage
           .from("patrol-photos")
           .upload(filePath, photo, {
             upsert: true,
             contentType: photo.type || "image/jpeg",
           });
+        
         if (uploadErr) throw uploadErr;
-        const { data } = supabase.storage
+        
+        const { data: publicUrlData } = supabase.storage
           .from("patrol-photos")
-          .getPublicUrl(filePath);
-        photoUrl = data.publicUrl;
+          .getPublicUrl(uploadData.path);
+        photoUrl = publicUrlData.publicUrl;
       }
 
-      // ✅ Clean Supabase insert
-      const { error } = await supabase.from("incidents").insert([
+      // Insert incident record
+      setStatus("Saving incident...");
+      const { error: insertError } = await supabase.from("incidents").insert([
         {
           description,
           photo_url: photoUrl,
@@ -57,20 +72,31 @@ export default function IncidentForm() {
         },
       ]);
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
-      // ✅ Telegram alert
+      // Send Telegram alert
+      setStatus("Sending alert...");
       const caption = `🚨 New Incident Report\n👤 ${guardName}\n🏍️ ${plateNo}\n📝 ${description}\n🕓 ${new Date().toLocaleString()}`;
       await sendTelegramPhoto(photoUrl || "https://upload.wikimedia.org/wikipedia/commons/8/84/Example.svg", caption);
 
-      setDescription("");
-      setPhoto(null);
-      setPreview("");
-      setStatus("✅ Report sent to admin!");
+      // Log the event
       await logEvent("INCIDENT", description, "Guard");
+
+      // Success - reset form and show success message
+      resetForm();
+      setStatus("✅ Incident submitted successfully!");
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setStatus(""), 3000);
+      
     } catch (err) {
       console.error("Incident submit failed:", err);
-      setStatus("❌ Upload failed: " + err.message);
+      setStatus(`❌ Upload failed: ${err.message}`);
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => setStatus(""), 5000);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,13 +111,16 @@ export default function IncidentForm() {
         <Upload className="w-5 h-5 text-accent" /> Submit Incident Report
       </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" disabled={loading}>
         <textarea
           placeholder="Describe the incident..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           required
-          className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none resize-none"
+          disabled={loading}
+          className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none resize-none ${
+            loading ? "bg-gray-100 cursor-not-allowed" : ""
+          }`}
           rows={3}
         />
 
@@ -115,12 +144,28 @@ export default function IncidentForm() {
 
         <button
           type="submit"
-          className="flex items-center gap-2 bg-accent text-white px-5 py-2 rounded-xl shadow hover:bg-accent/90 transition"
+          disabled={loading}
+          className={`flex items-center gap-2 px-5 py-2 rounded-xl shadow transition ${
+            loading 
+              ? "bg-gray-400 cursor-not-allowed" 
+              : "bg-accent text-white hover:bg-accent/90"
+          }`}
         >
-          <Send className="w-4 h-4" /> Submit Report
+          <Send className="w-4 h-4" /> 
+          {loading ? "Submitting..." : "Submit Report"}
         </button>
 
-        {status && <p className="text-sm text-gray-500 mt-2">{status}</p>}
+        {status && (
+          <div className={`mt-2 p-3 rounded-lg text-sm ${
+            status.includes("✅") 
+              ? "bg-green-100 text-green-800 border border-green-200" 
+              : status.includes("❌")
+              ? "bg-red-100 text-red-800 border border-red-200"
+              : "bg-blue-100 text-blue-800 border border-blue-200"
+          }`}>
+            {status}
+          </div>
+        )}
       </form>
     </motion.div>
   );
