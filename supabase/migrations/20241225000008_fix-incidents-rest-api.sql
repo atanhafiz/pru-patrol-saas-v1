@@ -12,7 +12,7 @@ grant select, insert, update, delete on table public.incidents to anon, authenti
 grant all privileges on table public.incidents to postgres, service_role;
 
 -- ✅ Force PostgREST schema refresh
-comment on table public.incidents is 'supabase-rest-refresh-' || now();
+comment on table public.incidents is 'supabase-rest-refresh';
 
 -- ✅ Verify structure exists for REST metadata
 select column_name, data_type 
