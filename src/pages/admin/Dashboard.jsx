@@ -153,11 +153,11 @@ export default function AdminDashboard() {
   ];
 
   const activities = [
-    "👮 Guard Amir started patrol at Taman Permai",
+    "👮 Guard Amir started patrol at Prima Residensi Utama",
     "📸 Incident reported by Guard Danial (photo attached)",
-    "✅ Guard Naim completed patrol at Taman Damai",
+    "✅ Guard Naim completed patrol at Prima Residensi Utama",
     "⚠️ Guard Zuraidi connection lost, reconnecting...",
-    "📍 New checkpoint added at Block C – Level 3",
+    "📍 New checkpoint added at Prima Residensi Utama – Level 3",
   ];
 
   return (
