@@ -27,11 +27,25 @@ export default function Login() {
       // 🔍 Fetch profile
       const { data: prof, error: profErr } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, full_name")
         .eq("id", user.id)
         .single();
 
       if (profErr) throw profErr;
+
+      // Set localStorage for guards
+      if (prof?.role === "guard") {
+        const existingGuardName = localStorage.getItem("guardName");
+        const existingPlateNo = localStorage.getItem("plateNo");
+        
+        // Only set if not already set (preserve existing values)
+        if (!existingGuardName) {
+          localStorage.setItem("guardName", prof.full_name || "Guard");
+        }
+        if (!existingPlateNo) {
+          localStorage.setItem("plateNo", "Unknown");
+        }
+      }
 
       setMsg("✅ Login successful! Redirecting...");
       setTimeout(() => {

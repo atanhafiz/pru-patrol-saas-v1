@@ -6,6 +6,8 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [guardName, setGuardName] = useState("");
+  const [plateNo, setPlateNo] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const navigate = useNavigate();
@@ -35,6 +37,12 @@ export default function Register() {
       ]);
       if (insertErr) throw insertErr;
 
+      // Set localStorage for guards
+      if (role === "guard") {
+        localStorage.setItem("guardName", guardName || fullName);
+        localStorage.setItem("plateNo", plateNo || "Unknown");
+      }
+
       setMsg("✅ Registration complete. Redirecting...");
       setTimeout(() => {
         navigate(role === "admin" ? "/admin/dashboard" : "/guard/dashboard");
@@ -61,6 +69,16 @@ export default function Register() {
         <div className="mb-4">
           <label className="block text-sm font-medium text-primary mb-1">Full Name</label>
           <input type="text" placeholder="John Doe" value={fullName} onChange={(e)=>setFullName(e.target.value)} className="border border-gray-300 w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-primary mb-1">Guard Name</label>
+          <input type="text" placeholder="Amir" value={guardName} onChange={(e)=>setGuardName(e.target.value)} className="border border-gray-300 w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-primary mb-1">Plate Number</label>
+          <input type="text" placeholder="ABC1234" value={plateNo} onChange={(e)=>setPlateNo(e.target.value)} className="border border-gray-300 w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" />
         </div>
 
         <div className="mb-4">
