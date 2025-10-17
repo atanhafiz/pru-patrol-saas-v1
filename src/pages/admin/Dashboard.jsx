@@ -40,11 +40,18 @@ export default function AdminDashboard() {
   
   // 📋 Patrol Assignments State
   const [assignments, setAssignments] = useState([]);
+  
+  // 📊 Dashboard Metrics State
+  const [attendanceToday, setAttendanceToday] = useState(0);
+  const [activePatrols, setActivePatrols] = useState(0);
+  const [pendingReports, setPendingReports] = useState(0);
+  const [incidentsToday, setIncidentsToday] = useState(0);
 
   // 🧾 Activity Log Auto-Fetch
   useEffect(() => {
     fetchLogs();
     fetchAssignments();
+    fetchDashboardMetrics();
 
     // subscribe to realtime changes (optional live)
     const channel = supabase
@@ -76,6 +83,45 @@ export default function AdminDashboard() {
       .select("*")
       .order("created_at", { ascending: false });
     if (!error) setAssignments(data || []);
+  };
+
+  const fetchDashboardMetrics = async () => {
+    try {
+      // Get today's date range
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+      const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+
+      // Fetch attendance today
+      const { count: attendanceCount } = await supabase
+        .from("attendance_log")
+        .select("*", { count: "exact" })
+        .gte("created_at", startOfDay);
+      setAttendanceToday(attendanceCount || 0);
+
+      // Fetch active patrols (pending assignments)
+      const { count: patrolsCount } = await supabase
+        .from("patrol_assignments")
+        .select("*", { count: "exact" })
+        .eq("status", "pending");
+      setActivePatrols(patrolsCount || 0);
+
+      // Fetch pending reports (active incidents)
+      const { count: reportsCount } = await supabase
+        .from("incidents")
+        .select("*", { count: "exact" })
+        .eq("status", "active");
+      setPendingReports(reportsCount || 0);
+
+      // Fetch incidents today
+      const { count: incidentsCount } = await supabase
+        .from("incidents")
+        .select("*", { count: "exact" })
+        .gte("created_at", startOfDay);
+      setIncidentsToday(incidentsCount || 0);
+    } catch (err) {
+      console.error("Error fetching dashboard metrics:", err);
+    }
   };
 
   // 🧹 Clear Status Button
@@ -126,27 +172,27 @@ export default function AdminDashboard() {
 
   const metrics = [
     {
-      title: "Active Guards",
-      value: 14,
+      title: "Total Attendance Today",
+      value: attendanceToday,
       icon: <Users className="text-accent w-6 h-6" />,
       gradient: "from-blue-500 to-cyan-400",
     },
     {
       title: "Active Patrols",
-      value: 5,
+      value: activePatrols,
       icon: <ShieldCheck className="text-green-400 w-6 h-6" />,
       gradient: "from-green-500 to-emerald-400",
     },
     {
       title: "Pending Reports",
-      value: 3,
+      value: pendingReports,
       icon: <ClipboardCheck className="text-yellow-400 w-6 h-6" />,
       gradient: "from-yellow-400 to-orange-400",
     },
     {
-      title: "Online Devices",
-      value: 7,
-      icon: <Wifi className="text-purple-400 w-6 h-6" />,
+      title: "Total Incidents Today",
+      value: incidentsToday,
+      icon: <Bell className="text-purple-400 w-6 h-6" />,
       gradient: "from-purple-500 to-pink-400",
     },
   ];
