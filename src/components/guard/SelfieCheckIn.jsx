@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, MapPin, CheckCircle } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
+import { logEvent } from "../../lib/logEvent";
 
 export default function SelfieCheckIn() {
   const videoRef = useRef(null);
@@ -87,20 +88,33 @@ export default function SelfieCheckIn() {
         .from("attendance-photos")
         .getPublicUrl(data.path);
 
-      const { error: insertError } = await supabase.from("attendance").insert([
+      const { error: insertError } = await supabase.from("attendance_log").insert([
         {
-          photo_url: publicUrl.publicUrl,
+          selfie_url: publicUrl.publicUrl,
           lat: coords.lat,
-          lng: coords.lng,
+          long: coords.lng,
           guard_name: guardName,
           plate_no: plateNo,
         },
       ]);
       if (insertError) throw insertError;
 
-      setStatus("✅ Attendance submitted successfully!");
+      setStatus("✅ Check-In Successful");
       await logEvent("CHECKIN", "Guard submitted selfie check-in", "Guard");
+      
+      // Update localStorage with check-in data
+      localStorage.setItem("lastCheckInTime", new Date().toISOString());
+      localStorage.setItem("lastCheckInGPS", JSON.stringify({
+        lat: coords.lat,
+        lng: coords.lng
+      }));
+      
       setCaptured("");
+      
+      // Auto-refresh after 2 seconds
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (err) {
       console.error(err);
       setStatus("❌ Failed to submit attendance");
