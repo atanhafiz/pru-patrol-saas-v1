@@ -12,6 +12,7 @@ export default function SelfieCheckIn() {
   const [coords, setCoords] = useState(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [guardName, setGuardName] = useState("");
 
   useEffect(() => {
     startCamera();
@@ -55,26 +56,12 @@ export default function SelfieCheckIn() {
   };
 
   const handleSubmit = async () => {
-    if (!captured || !coords) {
-      setStatus("⚠️ Please take selfie & enable GPS first");
+    if (!captured || !coords || !guardName.trim()) {
+      setStatus("⚠️ Please enter your name, take selfie & enable GPS first");
       return;
     }
     setLoading(true);
     try {
-      // Get guard info from localStorage or prompt for it
-      let guardName = localStorage.getItem("guardName");
-      let plateNo = localStorage.getItem("plateNo");
-      
-      // If not set, prompt for guard information
-      if (!guardName || !plateNo) {
-        guardName = prompt("Enter your name:") || "Unknown Guard";
-        plateNo = prompt("Enter your plate number:") || "Unknown";
-        
-        // Save to localStorage for future use
-        localStorage.setItem("guardName", guardName);
-        localStorage.setItem("plateNo", plateNo);
-        console.log("✅ localStorage updated:", guardName, plateNo);
-      }
 
       const fileName = `attendance/${guardName}_${Date.now()}.png`;
       const base64Data = captured.split(",")[1];
@@ -94,20 +81,18 @@ export default function SelfieCheckIn() {
           selfie_url: publicUrl.publicUrl,
           lat: coords.lat,
           long: coords.lng,
-          guard_name: guardName,
-          plate_no: plateNo,
+          guard_name: guardName.trim(),
         },
       ]);
       if (insertError) throw insertError;
 
-      setStatus("✅ Check-In Successful");
+      setStatus("✅ Attendance submitted successfully");
       await logEvent("CHECKIN", "Guard submitted selfie check-in", "Guard");
       
       // Send Telegram alert
       try {
         const caption = `✅ Guard Attendance Check-In
-👤 ${guardName}
-🏍️ ${plateNo}
+👤 ${guardName.trim()}
 📍 ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}
 🕓 ${new Date().toLocaleString()}`;
         
@@ -118,14 +103,8 @@ export default function SelfieCheckIn() {
         // Don't fail the whole process if Telegram fails
       }
       
-      // Update localStorage with check-in data
-      localStorage.setItem("lastCheckInTime", new Date().toISOString());
-      localStorage.setItem("lastCheckInGPS", JSON.stringify({
-        lat: coords.lat,
-        lng: coords.lng
-      }));
-      
       setCaptured("");
+      setGuardName("");
       
       // Auto-refresh after 2 seconds
       setTimeout(() => {
@@ -149,6 +128,17 @@ export default function SelfieCheckIn() {
       <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
         <Camera className="w-5 h-5 text-accent" /> Selfie Check-In
       </h2>
+
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Enter your name"
+          value={guardName}
+          onChange={(e) => setGuardName(e.target.value)}
+          className="border p-2 rounded w-full mb-3"
+          required
+        />
+      </div>
 
       {!captured ? (
         <div className="flex flex-col items-center gap-3">
