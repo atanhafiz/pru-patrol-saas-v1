@@ -11,12 +11,25 @@ export default function AdminAlertCenter() {
     const { data, error } = await supabase
       .from("incidents")
       .select("*")
+      .eq("status", "active")
       .order("created_at", { ascending: false });
     if (!error && data) setAlerts(data);
   };
 
   useEffect(() => {
     fetchAlerts();
+    
+    // Auto-archive old reports
+    const autoArchiveOldReports = async () => {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase
+        .from("incidents")
+        .update({ status: "archived" })
+        .lt("created_at", thirtyDaysAgo)
+        .eq("status", "active");
+    };
+    autoArchiveOldReports();
+    
     const channel = supabase
       .channel("alert_center")
       .on(

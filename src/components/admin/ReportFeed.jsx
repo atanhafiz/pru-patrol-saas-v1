@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabaseClient";
-import { AlertTriangle, Clock, Image } from "lucide-react";
+import { AlertTriangle, Clock, Image, Trash2 } from "lucide-react";
 
 export default function ReportFeed() {
   const [reports, setReports] = useState([]);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const fetchReports = async () => {
     const { data, error } = await supabase
       .from("incidents")
       .select("*")
+      .eq("status", "active")
       .order("created_at", { ascending: false });
     if (!error && data) setReports(data);
   };
@@ -31,6 +33,43 @@ export default function ReportFeed() {
     return () => supabase.removeChannel(channel);
   }, []);
 
+  // Auto-archive old reports on component mount
+  useEffect(() => {
+    const autoArchiveOldReports = async () => {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase
+        .from("incidents")
+        .update({ status: "archived" })
+        .lt("created_at", thirtyDaysAgo)
+        .eq("status", "active");
+    };
+    autoArchiveOldReports();
+  }, []);
+
+  const handleArchiveOldReports = async () => {
+    if (!confirm("Archive all reports older than 30 days?")) return;
+    
+    setIsArchiving(true);
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { error } = await supabase
+        .from("incidents")
+        .update({ status: "archived" })
+        .lt("created_at", thirtyDaysAgo)
+        .eq("status", "active");
+      
+      if (error) throw error;
+      
+      alert("✅ Old reports archived successfully!");
+      fetchReports(); // refresh UI
+    } catch (err) {
+      console.error("Archive error:", err);
+      alert("❌ Failed to archive reports: " + err.message);
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   return (
     <motion.div
       className="bg-gradient-to-br from-white to-soft rounded-3xl shadow-lg p-8 mt-10 border border-gray-100"
@@ -38,10 +77,20 @@ export default function ReportFeed() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <h2 className="text-3xl font-extrabold text-primary flex items-center gap-2 mb-6">
-        <AlertTriangle className="w-7 h-7 text-yellow-500" />
-        Live Incident Reports
-      </h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-extrabold text-primary flex items-center gap-2">
+          <AlertTriangle className="w-7 h-7 text-yellow-500" />
+          Live Incident Reports
+        </h2>
+        <button
+          onClick={handleArchiveOldReports}
+          disabled={isArchiving}
+          className="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          {isArchiving ? "Archiving..." : "🧹 Clear Old Reports"}
+        </button>
+      </div>
 
       {reports.length === 0 ? (
         <p className="text-gray-400 italic">No incidents reported yet.</p>
