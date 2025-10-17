@@ -37,12 +37,14 @@ export default function Report() {
       await sendTelegramPhoto(photoUrl || "https://upload.wikimedia.org/wikipedia/commons/8/84/Example.svg", caption);
 
       // save record to Supabase
-      await supabase.from("incidents").insert({
+      const { error: insertError } = await supabase.from("incidents").insert({
         guard_name: guardName,
         plate_no: plateNo,
-        message,
+        description: message,
         photo_url: photoUrl,
       });
+      
+      if (insertError) throw insertError;
 
       alert("✅ Report sent to admin!");
       setMessage("");
