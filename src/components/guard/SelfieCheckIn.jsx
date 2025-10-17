@@ -59,7 +59,21 @@ export default function SelfieCheckIn() {
     }
     setLoading(true);
     try {
-      const fileName = `attendance/${Date.now()}.png`;
+      // Get guard info from localStorage or prompt for it
+      let guardName = localStorage.getItem("guardName");
+      let plateNo = localStorage.getItem("plateNo");
+      
+      // If not set, prompt for guard information
+      if (!guardName || !plateNo) {
+        guardName = prompt("Enter your name:") || "Unknown Guard";
+        plateNo = prompt("Enter your plate number:") || "Unknown";
+        
+        // Save to localStorage for future use
+        localStorage.setItem("guardName", guardName);
+        localStorage.setItem("plateNo", plateNo);
+      }
+
+      const fileName = `attendance/${guardName}_${Date.now()}.png`;
       const base64Data = captured.split(",")[1];
       const blob = await fetch(captured).then((r) => r.blob());
 
@@ -77,6 +91,8 @@ export default function SelfieCheckIn() {
           photo_url: publicUrl.publicUrl,
           lat: coords.lat,
           lng: coords.lng,
+          guard_name: guardName,
+          plate_no: plateNo,
         },
       ]);
       if (insertError) throw insertError;
