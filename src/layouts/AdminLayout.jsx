@@ -1,6 +1,6 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Outlet, Link } from "react-router-dom";
-import { Home, Users, Map, FileText } from "lucide-react";
+import { Home } from "lucide-react";
 import LogoutButton from "../components/shared/LogoutButton";
 
 export default function AdminLayout() {
@@ -18,15 +18,6 @@ export default function AdminLayout() {
           <nav className="flex flex-col p-4 space-y-2">
             <Link to="/admin/dashboard" className="flex items-center gap-2 p-2 rounded hover:bg-white/10">
               <Home size={18} /> Dashboard
-            </Link>
-            <Link to="/admin/guards" className="flex items-center gap-2 p-2 rounded hover:bg-white/10">
-              <Users size={18} /> Guards
-            </Link>
-            <Link to="/admin/houses" className="flex items-center gap-2 p-2 rounded hover:bg-white/10">
-              <Map size={18} /> Houses
-            </Link>
-            <Link to="/admin/reports" className="flex items-center gap-2 p-2 rounded hover:bg-white/10">
-              <FileText size={18} /> Reports
             </Link>
           </nav>
         </div>
