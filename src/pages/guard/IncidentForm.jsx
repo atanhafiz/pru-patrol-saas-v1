@@ -23,6 +23,10 @@ export default function IncidentForm() {
     e.preventDefault();
     setStatus("Uploading...");
 
+    // Debug logs
+    console.log("🔍 URL:", import.meta.env.VITE_SUPABASE_URL);
+    console.log("🔍 KEY:", import.meta.env.VITE_SUPABASE_KEY ? "✅ detected" : "❌ missing");
+
     try {
       const guardName = localStorage.getItem("guardName") || "-";
       const plateNo = localStorage.getItem("plateNo") || "-";
