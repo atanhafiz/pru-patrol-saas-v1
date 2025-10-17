@@ -13,52 +13,68 @@ import {
 } from "recharts";
 
 export default function GuardDashboard() {
-  const [attendance, setAttendance] = useState(0);
-  const [routes, setRoutes] = useState({ total: 0, done: 0 });
+  const [attendanceCount, setAttendanceCount] = useState(0);
   const [incidents, setIncidents] = useState(0);
   const [lastCheck, setLastCheck] = useState(null);
   const [chartData, setChartData] = useState([]);
-  const guardName = localStorage.getItem("guardName") || "Guard";
+  const [guardName, setGuardName] = useState("Unknown");
 
   const fetchData = async () => {
-    const [
-      { count: attCount, data: attData },
-      { data: rData },
-      { count: incCount },
-    ] = await Promise.all([
-      supabase.from("attendance").select("*", { count: "exact" }),
-      supabase
-        .from("patrol_assignments")
+    try {
+      // Fetch attendance data from attendance_log table
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from("attendance_log")
         .select("*")
-        .eq("guard_name", guardName),
-      supabase.from("incidents").select("*", { count: "exact" }),
-    ]);
+        .order("created_at", { ascending: false });
 
-    if (attData?.length) {
-      const latest = attData.sort(
-        (a, b) => new Date(b.created_at) - new Date(a.created_at)
-      )[0];
-      setLastCheck(latest);
+      if (attendanceError) {
+        console.error("Error fetching attendance data:", attendanceError);
+        return;
+      }
 
-      // group by day
-      const grouped = {};
-      attData.forEach((a) => {
-        const day = new Date(a.created_at).toLocaleDateString("en-GB");
-        grouped[day] = (grouped[day] || 0) + 1;
-      });
-      const formatted = Object.entries(grouped).map(([date, count]) => ({
-        date,
-        count,
-      }));
-      setChartData(formatted.slice(-7)); // last 7 days
+      // Fetch incidents count
+      const { count: incCount } = await supabase
+        .from("incidents")
+        .select("*", { count: "exact" });
+
+      if (attendanceData && attendanceData.length > 0) {
+        // Get guard name from latest attendance record
+        const latestGuardName = attendanceData[0]?.guard_name || "Unknown";
+        setGuardName(latestGuardName);
+
+        // Calculate attendance count for last 7 days
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const recentAttendance = attendanceData.filter(
+          (d) => new Date(d.created_at) >= sevenDaysAgo
+        );
+        setAttendanceCount(recentAttendance.length);
+
+        // Set last check-in data
+        setLastCheck(attendanceData[0]);
+
+        // Build 7-day attendance history
+        const dailyData = {};
+        attendanceData.forEach((d) => {
+          const day = new Date(d.created_at).toLocaleDateString();
+          dailyData[day] = (dailyData[day] || 0) + 1;
+        });
+        
+        const chartData = Object.entries(dailyData)
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+          .slice(-7); // last 7 days
+        
+        setChartData(chartData);
+      } else {
+        setAttendanceCount(0);
+        setLastCheck(null);
+        setChartData([]);
+      }
+
+      setIncidents(incCount || 0);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
     }
-
-    setAttendance(attCount || 0);
-    if (rData) {
-      const done = rData.filter((r) => r.status === "completed").length;
-      setRoutes({ total: rData.length, done });
-    }
-    setIncidents(incCount || 0);
   };
 
 
@@ -75,16 +91,10 @@ export default function GuardDashboard() {
 
   const cards = [
     {
-      title: "Attendance",
-      value: attendance,
+      title: "Attendance (7 Days)",
+      value: attendanceCount,
       icon: <Camera className="w-6 h-6 text-accent" />,
       color: "from-blue-500 to-cyan-400",
-    },
-    {
-      title: "Patrol Completed",
-      value: `${routes.done}/${routes.total}`,
-      icon: <ListChecks className="w-6 h-6 text-green-400" />,
-      color: "from-green-500 to-emerald-400",
     },
     {
       title: "Incidents Reported",
@@ -146,7 +156,7 @@ export default function GuardDashboard() {
               {new Date(lastCheck.created_at).toLocaleString()}
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              GPS: {lastCheck.lat.toFixed(4)}, {lastCheck.lng.toFixed(4)}
+              GPS: {lastCheck.lat?.toFixed(5)}, {lastCheck.long?.toFixed(5)}
             </p>
           </div>
           <Clock className="w-8 h-8 text-accent" />
