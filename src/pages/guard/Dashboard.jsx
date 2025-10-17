@@ -17,7 +17,6 @@ export default function GuardDashboard() {
   const [incidents, setIncidents] = useState(0);
   const [lastCheck, setLastCheck] = useState(null);
   const [chartData, setChartData] = useState([]);
-  const [guardName, setGuardName] = useState("Unknown");
 
   const fetchData = async () => {
     try {
@@ -38,21 +37,17 @@ export default function GuardDashboard() {
         .select("*", { count: "exact" });
 
       if (attendanceData && attendanceData.length > 0) {
-        // Get guard name from latest attendance record
-        const latestGuardName = attendanceData[0]?.guard_name || "Unknown";
-        setGuardName(latestGuardName);
-
-        // Calculate attendance count for last 7 days
+        // Calculate attendance count for last 7 days (all guards)
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         const recentAttendance = attendanceData.filter(
           (d) => new Date(d.created_at) >= sevenDaysAgo
         );
         setAttendanceCount(recentAttendance.length);
 
-        // Set last check-in data
+        // Set last check-in data (most recent from any guard)
         setLastCheck(attendanceData[0]);
 
-        // Build 7-day attendance history
+        // Build 7-day attendance history (aggregate of all guards)
         const dailyData = {};
         attendanceData.forEach((d) => {
           const day = new Date(d.created_at).toLocaleDateString();
@@ -91,7 +86,7 @@ export default function GuardDashboard() {
 
   const cards = [
     {
-      title: "Attendance (7 Days)",
+      title: "Total Attendance (7 Days)",
       value: attendanceCount,
       icon: <Camera className="w-6 h-6 text-accent" />,
       color: "from-blue-500 to-cyan-400",
@@ -111,7 +106,7 @@ export default function GuardDashboard() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        Guard Dashboard - {guardName}
+        Guard Dashboard
       </motion.h1>
 
       {/* Summary cards */}
@@ -158,6 +153,9 @@ export default function GuardDashboard() {
             <p className="text-xs text-gray-400 mt-1">
               GPS: {lastCheck.lat?.toFixed(5)}, {lastCheck.long?.toFixed(5)}
             </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Guard: {lastCheck.guard_name}
+            </p>
           </div>
           <Clock className="w-8 h-8 text-accent" />
         </motion.div>
@@ -172,7 +170,7 @@ export default function GuardDashboard() {
           transition={{ duration: 0.8 }}
         >
           <h3 className="text-xl font-semibold text-primary mb-4">
-            Attendance History (7 Days)
+            Total Attendance History (7 Days)
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
