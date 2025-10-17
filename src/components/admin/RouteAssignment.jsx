@@ -24,15 +24,29 @@ export default function RouteAssignment() {
   };
 
   useEffect(() => {
-    // Load CSV houses list
-    fetch("/src/data/rumah_pru.csv")
-      .then((r) => r.text())
-      .then((csv) =>
-        Papa.parse(csv, {
+    // 🧾 Try fetch CSV first
+    fetch("/rumah_pru.csv")
+      .then((res) => {
+        if (!res.ok) throw new Error("CSV not found");
+        return res.text();
+      })
+      .then((csvText) => {
+        Papa.parse(csvText, {
           header: true,
-          complete: (res) => setHouseList(res.data.filter((x) => x.house_number)),
-        })
-      );
+          complete: (result) => {
+            const filtered = result.data.filter((r) => r.house_number);
+            setHouseList(filtered);
+          },
+        });
+      })
+      .catch(async () => {
+        console.warn("⚠️ rumah_pru.csv not found, fetching from Supabase...");
+        const { data, error } = await supabase
+          .from("houses")
+          .select("house_number, street_name, block");
+        if (!error && data) setHouseList(data);
+      });
+
     fetchData();
 
     const channel = supabase
