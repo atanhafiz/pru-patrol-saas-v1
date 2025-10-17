@@ -275,9 +275,9 @@ const [registered, setRegistered] = useState(false);
         
         // Log selfie action
         if (mode === "selfieIn") {
-          await logActivity("checkin", `Selfie IN at ${coords}`);
+          await logActivity("checkin", `Started patrol at Prima Residensi Utama`);
         } else if (mode === "selfieOut") {
-          await logActivity("checkout", `Selfie OUT at ${coords}`);
+          await logActivity("checkout", `Completed patrol at Prima Residensi Utama`);
         }
       } else if (mode === "house" && targetHouse) {
         const filePath = `houses/${(guardName || "-")}_${targetHouse.house_no}_${ts}.jpg`;
@@ -287,7 +287,7 @@ const [registered, setRegistered] = useState(false);
         await supabase.from("patrol_assignments").update({ photo_url: photoUrl, status: "completed" }).eq("id", targetHouse.id);
         
         // Log house patrol action
-        await logActivity("patrol", `Route completed (${targetHouse.house_no})`);
+        await logActivity("patrol", `Route completed at Prima Residensi Utama (${targetHouse.house_no})`);
       }
 
       // send to telegram
