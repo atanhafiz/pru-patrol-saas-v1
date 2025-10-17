@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Camera, MapPin, CheckCircle } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { logEvent } from "../../lib/logEvent";
+import { sendTelegramPhoto } from "../../lib/telegram";
 
 export default function SelfieCheckIn() {
   const videoRef = useRef(null);
@@ -101,6 +102,21 @@ export default function SelfieCheckIn() {
 
       setStatus("✅ Check-In Successful");
       await logEvent("CHECKIN", "Guard submitted selfie check-in", "Guard");
+      
+      // Send Telegram alert
+      try {
+        const caption = `✅ Guard Attendance Check-In
+👤 ${guardName}
+🏍️ ${plateNo}
+📍 ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}
+🕓 ${new Date().toLocaleString()}`;
+        
+        await sendTelegramPhoto(publicUrl.publicUrl, caption);
+        console.log("✅ Telegram alert sent for attendance check-in");
+      } catch (telegramErr) {
+        console.error("❌ Failed to send Telegram alert:", telegramErr);
+        // Don't fail the whole process if Telegram fails
+      }
       
       // Update localStorage with check-in data
       localStorage.setItem("lastCheckInTime", new Date().toISOString());
