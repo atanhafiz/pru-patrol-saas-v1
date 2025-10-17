@@ -2,17 +2,23 @@ import { supabase } from "./supabaseClient";
 
 /**
  * Log event ke activity_log table
- * @param {string} eventType - jenis event, contoh: "INCIDENT", "ROUTE", "CHECKIN"
+ * @param {string} type - jenis event, contoh: "INCIDENT", "ROUTE", "CHECKIN"
  * @param {string} description - keterangan ringkas
- * @param {string} guardName - nama guard (optional)
+ * @param {string} userRole - role user (admin/guard)
  */
-export async function logEvent(eventType, description, guardName = "-") {
+export async function logEvent(type, description, userRole) {
   try {
     const { error } = await supabase.from("activity_log").insert([
-      { event_type: eventType, description, guard_name: guardName },
+      {
+        type,
+        description,
+        user_role: userRole,
+        created_at: new Date().toISOString(),
+      },
     ]);
-    if (error) console.error("Log insert failed:", error.message);
+    if (error) throw error;
+    console.log("✅ Event logged successfully");
   } catch (err) {
-    console.error("LogEvent Error:", err.message);
+    console.error("❌ Error logging event:", err);
   }
 }
