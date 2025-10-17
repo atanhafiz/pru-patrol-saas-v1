@@ -192,13 +192,6 @@ export default function AdminDashboard() {
         <div className="flex flex-wrap gap-4">
           <LiveGuardMapButton />
           <Link
-            to="/admin/attendance-history"
-            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-          >
-            <Users className="w-5 h-5" />
-            <span className="font-semibold">📍 Attendance History</span>
-          </Link>
-          <Link
             to="/admin/incidents"
             className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
           >
