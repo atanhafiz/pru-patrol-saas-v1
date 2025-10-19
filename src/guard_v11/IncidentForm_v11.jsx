@@ -1,11 +1,10 @@
+// PRU Patrol Sandbox v1.1 – IncidentForm_v11.jsx
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { supabase } from "../lib/supabaseClient";
-import { sendTelegramAlert } from "../shared_v11/api/telegram";
+import { supabase } from "../../lib/supabaseClient";
+import { sendTelegramPhoto } from "../../lib/telegram";
 import { Upload, Image, Send } from "lucide-react";
-import { logEvent } from "../lib/logEvent";
-import LoadingSpinner from "../shared_v11/components/LoadingSpinner";
-import ErrorBoundary from "../shared_v11/components/ErrorBoundary";
+import { logEvent } from "../../lib/logEvent";
 
 export default function IncidentForm_v11() {
   const [description, setDescription] = useState("");
@@ -76,11 +75,10 @@ export default function IncidentForm_v11() {
 
       if (insertError) throw insertError;
 
-      // Send Telegram alert using centralized function
+      // Send Telegram alert
       setStatus("Sending alert...");
-      await sendTelegramAlert("INCIDENT_REPORT", {
-        message: `🚨 New Incident Report\n👤 ${guardName}\n🏍️ ${plateNo}\n📝 ${description}\n🕓 ${new Date().toLocaleString()}`
-      });
+      const caption = `🚨 New Incident Report\n👤 ${guardName}\n🏍️ ${plateNo}\n📝 ${description}\n🕓 ${new Date().toLocaleString()}`;
+      await sendTelegramPhoto(photoUrl || "https://upload.wikimedia.org/wikipedia/commons/8/84/Example.svg", caption);
 
       // Log the event
       await logEvent("INCIDENT", description, "Guard");
@@ -104,74 +102,72 @@ export default function IncidentForm_v11() {
   };
 
   return (
-    <ErrorBoundary>
-      <motion.div
-        className="bg-white rounded-2xl shadow-md p-6 mt-10"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
-          <Upload className="w-5 h-5 text-accent" /> Submit Incident Report v1.1
-        </h2>
+    <motion.div
+      className="bg-white rounded-2xl shadow-md p-6 mt-10"
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
+        <Upload className="w-5 h-5 text-accent" /> Submit Incident Report v1.1
+      </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4" disabled={loading}>
-          <textarea
-            placeholder="Describe the incident..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-            disabled={loading}
-            className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none resize-none ${
-              loading ? "bg-gray-100 cursor-not-allowed" : ""
-            }`}
-            rows={3}
-          />
+      <form onSubmit={handleSubmit} className="space-y-4" disabled={loading}>
+        <textarea
+          placeholder="Describe the incident..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+          disabled={loading}
+          className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none resize-none ${
+            loading ? "bg-gray-100 cursor-not-allowed" : ""
+          }`}
+          rows={3}
+        />
 
-          <div className="flex flex-col gap-3">
-            <label className="cursor-pointer flex items-center gap-3 text-accent font-medium hover:text-accent/80">
-              <Image className="w-5 h-5" />
-              <span>Attach Photo</span>
-              <input type="file" accept="image/*" hidden onChange={handleFileChange} />
-            </label>
+        <div className="flex flex-col gap-3">
+          <label className="cursor-pointer flex items-center gap-3 text-accent font-medium hover:text-accent/80">
+            <Image className="w-5 h-5" />
+            <span>Attach Photo</span>
+            <input type="file" accept="image/*" hidden onChange={handleFileChange} />
+          </label>
 
-            {preview && (
-              <motion.img
-                src={preview}
-                alt="Preview"
-                className="rounded-xl shadow-md max-h-56 object-cover"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              />
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={`flex items-center gap-2 px-5 py-2 rounded-xl shadow transition ${
-              loading 
-                ? "bg-gray-400 cursor-not-allowed" 
-                : "bg-accent text-white hover:bg-accent/90"
-            }`}
-          >
-            <Send className="w-4 h-4" /> 
-            {loading ? "Submitting..." : "Submit Report"}
-          </button>
-
-          {status && (
-            <div className={`mt-2 p-3 rounded-lg text-sm ${
-              status.includes("✅") 
-                ? "bg-green-100 text-green-800 border border-green-200" 
-                : status.includes("❌")
-                ? "bg-red-100 text-red-800 border border-red-200"
-                : "bg-blue-100 text-blue-800 border border-blue-200"
-            }`}>
-              {status}
-            </div>
+          {preview && (
+            <motion.img
+              src={preview}
+              alt="Preview"
+              className="rounded-xl shadow-md max-h-56 object-cover"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            />
           )}
-        </form>
-      </motion.div>
-    </ErrorBoundary>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className={`flex items-center gap-2 px-5 py-2 rounded-xl shadow transition ${
+            loading 
+              ? "bg-gray-400 cursor-not-allowed" 
+              : "bg-accent text-white hover:bg-accent/90"
+          }`}
+        >
+          <Send className="w-4 h-4" /> 
+          {loading ? "Submitting..." : "Submit Report"}
+        </button>
+
+        {status && (
+          <div className={`mt-2 p-3 rounded-lg text-sm ${
+            status.includes("✅") 
+              ? "bg-green-100 text-green-800 border border-green-200" 
+              : status.includes("❌")
+              ? "bg-red-100 text-red-800 border border-red-200"
+              : "bg-blue-100 text-blue-800 border border-blue-200"
+          }`}>
+            {status}
+          </div>
+        )}
+      </form>
+    </motion.div>
   );
 }

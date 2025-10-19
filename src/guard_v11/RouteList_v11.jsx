@@ -1,11 +1,10 @@
+// PRU Patrol Sandbox v1.1 – RouteList_v11.jsx
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "../lib/supabaseClient";
-import { sendTelegramAlert } from "../shared_v11/api/telegram";
+import { supabase } from "../../lib/supabaseClient";
+import { sendTelegramPhoto } from "../../lib/telegram";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Camera, Loader2 } from "lucide-react";
-import GuardBottomNav from "../components/GuardBottomNav";
-import LoadingSpinner from "../shared_v11/components/LoadingSpinner";
-import ErrorBoundary from "../shared_v11/components/ErrorBoundary";
+import GuardBottomNav from "../../components/GuardBottomNav";
 
 // Haversine function to calculate distance between two coordinates
 const haversine = (lat1, lng1, lat2, lng2) => {
@@ -22,10 +21,10 @@ const haversine = (lat1, lng1, lat2, lng2) => {
 export default function RouteList_v11() {
   const [assignments, setAssignments] = useState([]);
   // guardName & plateNo are editable inputs; registration state is controlled by `registered`
-  // guard wajib register setiap kali buka route page
-  const [guardName, setGuardName] = useState("");
-  const [plateNo, setPlateNo] = useState("");
-  const [registered, setRegistered] = useState(false);
+// guard wajib register setiap kali buka route page
+const [guardName, setGuardName] = useState("");
+const [plateNo, setPlateNo] = useState("");
+const [registered, setRegistered] = useState(false);
 
   const [guardPos, setGuardPos] = useState(null);
   const [mode, setMode] = useState(null); // "selfieIn" | "selfieOut" | "house"
@@ -80,9 +79,10 @@ export default function RouteList_v11() {
         // Send speed alert if speed exceeds 50 km/h
         if (speed > 50) {
           try {
-            await sendTelegramAlert("SPEED_ALERT", {
-              message: `⚠️ SPEED ALERT!\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${latitude},${longitude}\n🚀 Speed: ${speed.toFixed(1)} km/h`
-            });
+            await sendTelegramPhoto(
+              "",
+              `⚠️ SPEED ALERT!\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${latitude},${longitude}\n🚀 Speed: ${speed.toFixed(1)} km/h`
+            );
             console.log("Speed alert sent successfully");
           } catch (err) {
             console.error("Failed to send speed alert:", err);
@@ -165,11 +165,11 @@ export default function RouteList_v11() {
       alert("✅ Today's session cleared!");
       fetchAssignments();
 
-      // 🧾 Send Telegram alert to admin using centralized function
+      // 🧾 Send Telegram alert to admin
       try {
-        await sendTelegramAlert("PATROL_SESSION_CLEARED", {
-          message: `🧹 Patrol Session Cleared\n👤 Guard: ${guardName}\n🏍️ Plate: ${plateNo}\n📅 Date: ${new Date().toLocaleDateString()}\n✅ Status: All tasks completed.`
-        });
+        const caption = `🧹 Patrol Session Cleared\n👤 Guard: ${guardName}\n🏍️ Plate: ${plateNo}\n📅 Date: ${new Date().toLocaleDateString()}\n✅ Status: All tasks completed.`;
+        const dummyImage = "https://upload.wikimedia.org/wikipedia/commons/8/84/Example.svg"; // Telegram requires an image URL
+        await sendTelegramPhoto(dummyImage, caption);
       } catch (err) {
         console.error("Telegram alert failed:", err.message);
       }
@@ -291,10 +291,8 @@ export default function RouteList_v11() {
         await logActivity("patrol", `Route completed at Prima Residensi Utama (${targetHouse.house_no})`);
       }
 
-      // send to telegram using centralized function
-      await sendTelegramAlert("PATROL_UPDATE", {
-        message: caption
-      });
+      // send to telegram
+      await sendTelegramPhoto(photoUrl, caption);
 
       alert("✅ Uploaded & sent to Telegram!");
       setPhotoPreview(null);
@@ -311,137 +309,135 @@ export default function RouteList_v11() {
 
   // ---------- UI ----------
   return (
-    <ErrorBoundary>
-      <div className="p-5 space-y-5 pb-16">
-        <h1 className="text-2xl font-bold text-primary">Guard Dashboard v1.1</h1>
+    <div className="p-5 space-y-5 pb-16">
+      <h1 className="text-2xl font-bold text-primary">Guard Dashboard v1.1</h1>
 
-        {/* REGISTER FORM */}
-        {!registered ? (
-          <div className="bg-white p-4 rounded-xl shadow max-w-md">
-            <h3 className="font-semibold mb-2">Register Guard</h3>
+      {/* REGISTER FORM */}
+      {!registered ? (
+        <div className="bg-white p-4 rounded-xl shadow max-w-md">
+          <h3 className="font-semibold mb-2">Register Guard</h3>
 
-            <label className="text-xs text-gray-500">Name (any input accepted)</label>
-            <input
-              placeholder="Guard Name"
-              value={guardName}
-              onChange={(e) => setGuardName(e.target.value)}
-              className="border p-2 rounded w-full mb-2"
-            />
+          <label className="text-xs text-gray-500">Name (any input accepted)</label>
+          <input
+            placeholder="Guard Name"
+            value={guardName}
+            onChange={(e) => setGuardName(e.target.value)}
+            className="border p-2 rounded w-full mb-2"
+          />
 
-            <label className="text-xs text-gray-500">Plate Number (optional)</label>
-            <input
-              placeholder="Plate Number"
-              value={plateNo}
-              onChange={(e) => setPlateNo(e.target.value)}
-              className="border p-2 rounded w-full mb-3"
-            />
+          <label className="text-xs text-gray-500">Plate Number (optional)</label>
+          <input
+            placeholder="Plate Number"
+            value={plateNo}
+            onChange={(e) => setPlateNo(e.target.value)}
+            className="border p-2 rounded w-full mb-3"
+          />
 
-            <div className="flex gap-2">
-              <button
-                onClick={handleRegister}
-                className="bg-accent text-white px-4 py-2 rounded flex-1"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => {
-                  setGuardName("");
-                  setPlateNo("");
-                  setRegistered(false);
-                }}
-                className="text-xs text-gray-500 underline mt-2"
-              >
-                Reset Registration
-              </button>
-            </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleRegister}
+              className="bg-accent text-white px-4 py-2 rounded flex-1"
+            >
+              Save
+            </button>
+            <button
+  onClick={() => {
+    setGuardName("");
+    setPlateNo("");
+    setRegistered(false);
+  }}
+  className="text-xs text-gray-500 underline mt-2"
+>
+  Reset Registration
+</button>
           </div>
-        ) : (
-          <>
-            {/* SELFIE BUTTONS */}
-            <div className="flex gap-2">
-              <button onClick={() => openCamera("selfieIn")} className="bg-green-500 text-white px-4 py-2 rounded">
-                Selfie IN
-              </button>
-              <button onClick={() => openCamera("selfieOut")} className="bg-red-500 text-white px-4 py-2 rounded">
-                Selfie OUT
+        </div>
+      ) : (
+        <>
+          {/* SELFIE BUTTONS */}
+          <div className="flex gap-2">
+            <button onClick={() => openCamera("selfieIn")} className="bg-green-500 text-white px-4 py-2 rounded">
+              Selfie IN
+            </button>
+            <button onClick={() => openCamera("selfieOut")} className="bg-red-500 text-white px-4 py-2 rounded">
+              Selfie OUT
+            </button>
+          </div>
+
+          {/* Clear Today's Session Button */}
+          {allCompletedToday && (
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={clearTodaySession}
+                className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded"
+              >
+                🧹 Clear Today's Session
               </button>
             </div>
+          )}
 
-            {/* Clear Today's Session Button */}
-            {allCompletedToday && (
-              <div className="flex gap-2 mt-2">
-                <button
-                  onClick={clearTodaySession}
-                  className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded"
+          {/* MAP */}
+          <div className="h-[360px] w-full rounded-xl overflow-hidden shadow relative z-0">
+            <MapContainer center={guardPos || [5.65, 100.5]} zoom={16} style={{ height: "100%", width: "100%" }}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+              {guardPos && (
+                <Marker position={guardPos}>
+                  <Popup>{(guardName === "-" ? "Guard" : guardName)} ({plateNo === "-" ? "" : plateNo})</Popup>
+                </Marker>
+              )}
+
+              {assignments.map((a) => (
+                <Marker
+                  key={a.id}
+                  position={[a.lat || 5.65 + Math.random() * 0.001, a.lng || 100.5 + Math.random() * 0.001]}
                 >
-                  🧹 Clear Today's Session
+                  <Popup>{a.house_no} {a.street_name} ({a.block})</Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          </div>
+
+          {/* TASK LIST */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            {assignments.map((a) => (
+              <div key={a.id} className={`p-4 rounded-xl shadow border ${a.status === "completed" ? "border-green-400 bg-green-50" : "border-yellow-300 bg-white"}`}>
+                <p className="font-semibold mb-1">🏠 {a.house_no} {a.street_name} ({a.block})</p>
+                <p className="text-sm mb-2">Session: {a.session_no}</p>
+                <button onClick={() => openCamera("house", a)} className="w-full bg-accent text-white py-2 rounded-lg flex justify-center items-center gap-1">
+                  <Camera className="w-4 h-4" /> Snap
                 </button>
               </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* CAMERA MODAL */}
+      {mode && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+          <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
+            <video ref={videoRef} width="400" height="300" className="rounded-md" autoPlay playsInline />
+            <canvas ref={canvasRef} width="400" height="300" hidden />
+
+            {photoPreview ? (
+              <img src={photoPreview} alt="preview" className="rounded-md my-3 w-full" />
+            ) : (
+              <button onClick={capturePhoto} className="w-full bg-accent text-white py-2 rounded-lg mt-3">Capture</button>
             )}
 
-            {/* MAP */}
-            <div className="h-[360px] w-full rounded-xl overflow-hidden shadow relative z-0">
-              <MapContainer center={guardPos || [5.65, 100.5]} zoom={16} style={{ height: "100%", width: "100%" }}>
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
-                {guardPos && (
-                  <Marker position={guardPos}>
-                    <Popup>{(guardName === "-" ? "Guard" : guardName)} ({plateNo === "-" ? "" : plateNo})</Popup>
-                  </Marker>
-                )}
+            {photoPreview && (
+              <button onClick={handleUpload} className="w-full bg-green-600 text-white py-2 rounded-lg mt-2 flex justify-center gap-2">
+                {loading ? (<><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>) : "Upload & Send"}
+              </button>
+            )}
 
-                {assignments.map((a) => (
-                  <Marker
-                    key={a.id}
-                    position={[a.lat || 5.65 + Math.random() * 0.001, a.lng || 100.5 + Math.random() * 0.001]}
-                  >
-                    <Popup>{a.house_no} {a.street_name} ({a.block})</Popup>
-                  </Marker>
-                ))}
-              </MapContainer>
-            </div>
-
-            {/* TASK LIST */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-              {assignments.map((a) => (
-                <div key={a.id} className={`p-4 rounded-xl shadow border ${a.status === "completed" ? "border-green-400 bg-green-50" : "border-yellow-300 bg-white"}`}>
-                  <p className="font-semibold mb-1">🏠 {a.house_no} {a.street_name} ({a.block})</p>
-                  <p className="text-sm mb-2">Session: {a.session_no}</p>
-                  <button onClick={() => openCamera("house", a)} className="w-full bg-accent text-white py-2 rounded-lg flex justify-center items-center gap-1">
-                    <Camera className="w-4 h-4" /> Snap
-                  </button>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* CAMERA MODAL */}
-        {mode && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
-            <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
-              <video ref={videoRef} width="400" height="300" className="rounded-md" autoPlay playsInline />
-              <canvas ref={canvasRef} width="400" height="300" hidden />
-
-              {photoPreview ? (
-                <img src={photoPreview} alt="preview" className="rounded-md my-3 w-full" />
-              ) : (
-                <button onClick={capturePhoto} className="w-full bg-accent text-white py-2 rounded-lg mt-3">Capture</button>
-              )}
-
-              {photoPreview && (
-                <button onClick={handleUpload} className="w-full bg-green-600 text-white py-2 rounded-lg mt-2 flex justify-center gap-2">
-                  {loading ? (<><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>) : "Upload & Send"}
-                </button>
-              )}
-
-              <button onClick={() => { stopCamera(); setMode(null); setPhotoPreview(null); setTargetHouse(null); }} className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2">Close</button>
-            </div>
+            <button onClick={() => { stopCamera(); setMode(null); setPhotoPreview(null); setTargetHouse(null); }} className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2">Close</button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 🧭 Bottom Navigation */}
-        <GuardBottomNav />
-      </div>
-    </ErrorBoundary>
+      {/* 🧭 Bottom Navigation */}
+      <GuardBottomNav />
+    </div>
   );
 }

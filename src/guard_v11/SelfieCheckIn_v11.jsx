@@ -1,11 +1,10 @@
+// PRU Patrol Sandbox v1.1 – SelfieCheckIn_v11.jsx
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, MapPin, CheckCircle } from "lucide-react";
-import { supabase } from "../lib/supabaseClient";
-import { logEvent } from "../lib/logEvent";
-import { sendTelegramAlert } from "../shared_v11/api/telegram";
-import LoadingSpinner from "../shared_v11/components/LoadingSpinner";
-import ErrorBoundary from "../shared_v11/components/ErrorBoundary";
+import { supabase } from "../../lib/supabaseClient";
+import { logEvent } from "../../lib/logEvent";
+import { sendTelegramPhoto } from "../../lib/telegram";
 
 export default function SelfieCheckIn_v11() {
   const videoRef = useRef(null);
@@ -31,7 +30,7 @@ export default function SelfieCheckIn_v11() {
       console.error("Upload error:", err.message);
       setStatus(`❌ Failed: ${err.message}`);
     }
-  };
+      };
 
   const getLocation = () => {
     if (!navigator.geolocation) {
@@ -91,11 +90,14 @@ export default function SelfieCheckIn_v11() {
       setStatus("✅ Attendance submitted successfully");
       await logEvent("CHECKIN", "Guard submitted selfie check-in", "Guard");
       
-      // Send Telegram alert using centralized function
+      // Send Telegram alert
       try {
-        await sendTelegramAlert("ATTENDANCE_CHECKIN", {
-          message: `✅ Guard Attendance Check-In\n👤 ${guardName.trim()}\n📍 ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}\n🕓 ${new Date().toLocaleString()}`
-        });
+        const caption = `✅ Guard Attendance Check-In
+👤 ${guardName.trim()}
+📍 ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}
+🕓 ${new Date().toLocaleString()}`;
+        
+        await sendTelegramPhoto(publicUrl.publicUrl, caption);
         console.log("✅ Telegram alert sent for attendance check-in");
       } catch (telegramErr) {
         console.error("❌ Failed to send Telegram alert:", telegramErr);
@@ -118,74 +120,72 @@ export default function SelfieCheckIn_v11() {
   };
 
   return (
-    <ErrorBoundary>
-      <motion.div
-        className="bg-white rounded-2xl shadow-md p-6 mt-10"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
-          <Camera className="w-5 h-5 text-accent" /> Selfie Check-In v1.1
-        </h2>
+    <motion.div
+      className="bg-white rounded-2xl shadow-md p-6 mt-10"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
+        <Camera className="w-5 h-5 text-accent" /> Selfie Check-In v1.1
+      </h2>
 
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Enter your name"
-            value={guardName}
-            onChange={(e) => setGuardName(e.target.value)}
-            className="border p-2 rounded w-full mb-3"
-            required
-          />
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Enter your name"
+          value={guardName}
+          onChange={(e) => setGuardName(e.target.value)}
+          className="border p-2 rounded w-full mb-3"
+          required
+        />
+      </div>
+
+      {!captured ? (
+        <div className="flex flex-col items-center gap-3">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            width="300"
+            height="300"
+            className="rounded-xl border shadow-md"
+          ></video>
+          <button
+            onClick={capturePhoto}
+            className="bg-accent text-white px-5 py-2 rounded-xl shadow hover:bg-accent/90 transition"
+          >
+            Capture Selfie
+          </button>
         </div>
+      ) : (
+        <div className="flex flex-col items-center gap-3">
+          <img
+            src={captured}
+            alt="Captured"
+            className="rounded-xl shadow-md max-h-80 object-cover"
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded-xl shadow hover:bg-green-600 transition"
+          >
+            <CheckCircle className="w-5 h-5" />
+            {loading ? "Submitting..." : "Submit Attendance"}
+          </button>
+        </div>
+      )}
 
-        {!captured ? (
-          <div className="flex flex-col items-center gap-3">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              width="300"
-              height="300"
-              className="rounded-xl border shadow-md"
-            ></video>
-            <button
-              onClick={capturePhoto}
-              className="bg-accent text-white px-5 py-2 rounded-xl shadow hover:bg-accent/90 transition"
-            >
-              Capture Selfie
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3">
-            <img
-              src={captured}
-              alt="Captured"
-              className="rounded-xl shadow-md max-h-80 object-cover"
-            />
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="flex items-center gap-2 bg-green-500 text-white px-5 py-2 rounded-xl shadow hover:bg-green-600 transition"
-            >
-              <CheckCircle className="w-5 h-5" />
-              {loading ? "Submitting..." : "Submit Attendance"}
-            </button>
-          </div>
-        )}
+      <canvas ref={canvasRef} width="300" height="300" hidden></canvas>
 
-        <canvas ref={canvasRef} width="300" height="300" hidden></canvas>
+      {coords && (
+        <p className="text-sm text-gray-500 mt-4 flex items-center gap-1">
+          <MapPin className="w-4 h-4 text-accent" />
+          GPS: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
+        </p>
+      )}
 
-        {coords && (
-          <p className="text-sm text-gray-500 mt-4 flex items-center gap-1">
-            <MapPin className="w-4 h-4 text-accent" />
-            GPS: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-          </p>
-        )}
-
-        {status && <p className="mt-2 text-gray-600 text-sm">{status}</p>}
-      </motion.div>
-    </ErrorBoundary>
+      {status && <p className="mt-2 text-gray-600 text-sm">{status}</p>}
+    </motion.div>
   );
 }
