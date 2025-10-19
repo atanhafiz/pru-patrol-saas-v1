@@ -39,25 +39,26 @@ export default function RouteList_v11() {
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-  // CAMERA CONTROL
-  const openCamera = async (type, house = null) => {
-    setMode(type);
-    setTargetHouse(house);
-    try {
-      const facingMode = "user"; // always front camera for selfie in/out
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode },
-        audio: false
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-    } catch (err) {
-      console.error("openCamera error:", err);
-      toast.error("Camera not accessible. Please check permissions.");
+// CAMERA CONTROL
+const openCamera = async (type, house = null) => {
+  setMode(type);
+  setTargetHouse(house);
+  try {
+    // Guna rear camera bila snap rumah, selfie bila selfieIn/selfieOut
+    const facingMode = type === "snapHouse" ? { exact: "environment" } : "user";
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode },
+      audio: false
+    });
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play();
     }
-  };
+  } catch (err) {
+    console.error("openCamera error:", err);
+    toast.error("Camera not accessible. Please check permissions.");
+  }
+};
 
   const stopCamera = () => {
     const stream = videoRef.current?.srcObject;
