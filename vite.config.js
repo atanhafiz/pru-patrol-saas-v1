@@ -6,6 +6,7 @@ dotenv.config();
 
 export default defineConfig({
   plugins: [react()],
+  base: "./", // for Netlify relative paths
   define: {
     "process.env": process.env,
   },
