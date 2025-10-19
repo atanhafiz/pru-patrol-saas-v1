@@ -9,7 +9,7 @@ export default function GuardLayout() {
     { path: "/guard/dashboard", icon: <Home size={20} />, label: "Home" },
     { path: "/guard/routes", icon: <ListChecks size={20} />, label: "Routes" },
     { path: "/guard/selfie", icon: <Camera size={20} />, label: "Selfie" },
-    { path: "/v11-test/incident", icon: <FileText size={20} />, label: "Report" },
+    { path: "/guard/incident", icon: <FileText size={20} />, label: "Report" },
     { path: "/guard/timeline", icon: <Clock3 size={20} />, label: "Timeline" },
   ];
 

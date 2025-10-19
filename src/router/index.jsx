@@ -10,7 +10,7 @@ import GuardDashboard from "../pages/guard/Dashboard";
 import RouteList from "../pages/guard/RouteList";
 import PatrolTimeline from "../pages/guard/PatrolTimeline";
 import SelfieCheckIn from "../pages/guard/SelfieCheckIn";
-import IncidentForm from "../pages/guard/IncidentForm";
+import IncidentForm_v11 from "../guard_v11/IncidentForm_v11";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Landing from "../pages/Landing";
@@ -52,7 +52,7 @@ export default function AppRouter() {
           <Route path="routes" element={<RouteList />} />
           <Route path="timeline" element={<PatrolTimeline />} />
           <Route path="selfie" element={<SelfieCheckIn />} />
-          <Route path="incident" element={<IncidentForm />} />
+          <Route path="incident" element={<IncidentForm_v11 />} />
           <Route path="*" element={<Navigate to="/guard/dashboard" />} />
         </Route>
       )}
