@@ -1,4 +1,4 @@
-// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (manual camera selector)
+// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (Web Stable - native capture camera)
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { sendTelegramPhoto } from "../shared_v11/api/telegram";
@@ -17,12 +17,9 @@ export default function RouteList_v11() {
   const [targetHouse, setTargetHouse] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [cameraFacing, setCameraFacing] = useState("environment"); // default
-  const [selectorOpen, setSelectorOpen] = useState(false);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
 
-  // --- Fetch assignments
+  // fetch assignments
   useEffect(() => {
     const fetchAssignments = async () => {
       const { data, error } = await supabase
@@ -41,56 +38,7 @@ export default function RouteList_v11() {
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-  // --- Start camera (after user picks front/back)
-  const startCamera = async (facing) => {
-    try {
-      stopCamera();
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: facing } },
-        audio: false,
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-    } catch (err) {
-      console.error("Camera error:", err);
-      toast.error("Camera not accessible. Please check permission.");
-    }
-  };
-
-  const stopCamera = () => {
-    const stream = videoRef.current?.srcObject;
-    if (stream) stream.getTracks().forEach((t) => t.stop());
-    if (videoRef.current) videoRef.current.srcObject = null;
-  };
-
-  const openCameraSelector = (type, house = null) => {
-    setMode(type);
-    setTargetHouse(house);
-    // default selection: rear if house, front if selfie
-    if (type === "selfieIn" || type === "selfieOut") {
-      setCameraFacing("user");
-    } else {
-      setCameraFacing("environment");
-    }
-    setSelectorOpen(true);
-  };
-
-  const confirmCamera = async () => {
-    setSelectorOpen(false);
-    await startCamera(cameraFacing);
-  };
-
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.drawImage(videoRef.current, 0, 0, 400, 300);
-    const dataUrl = canvasRef.current.toDataURL("image/jpeg");
-    setPhotoPreview(dataUrl);
-    stopCamera();
-  };
-
+  // dataURL helper
   const dataURLtoBlob = (dataurl) => {
     const arr = dataurl.split(",");
     const mime = arr[0].match(/:(.*?);/)[1];
@@ -100,8 +48,7 @@ export default function RouteList_v11() {
     return new Blob([u8arr], { type: mime });
   };
 
-  const uploadToSupabase = async (filePath, dataUrl) => {
-    const blob = dataURLtoBlob(dataUrl);
+  const uploadToSupabase = async (filePath, blob) => {
     const { error: upErr } = await supabase.storage
       .from("patrol-photos")
       .upload(filePath, blob, { contentType: "image/jpeg", upsert: true });
@@ -112,45 +59,70 @@ export default function RouteList_v11() {
     return data.publicUrl;
   };
 
-  const handleUpload = async () => {
-    if (!photoPreview || !mode) return;
-    setLoading(true);
+  const handleUploadFile = async (file, label = "Unknown House") => {
     try {
+      setLoading(true);
       const ts = Date.now();
       const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
-      const folder =
-        mode === "selfieIn"
-          ? "selfies/in"
-          : mode === "selfieOut"
-          ? "selfies/out"
-          : "houses";
-      const filePath = `${folder}/${guardName}_${plateNo}_${ts}.jpg`;
-      const photoUrl = await uploadToSupabase(filePath, photoPreview);
-      const caption =
-        mode === "selfieIn"
-          ? `🚨 Guard On Duty\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
-          : mode === "selfieOut"
-          ? `✅ Patrol Session Ended\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
-          : `🏠 House Photo\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
+      const blob = file;
+      const filePath = `houses/${guardName}_${plateNo}_${ts}.jpg`;
+
+      const photoUrl = await uploadToSupabase(filePath, blob);
+      const caption = `🏠 ${label}\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
       await sendTelegramPhoto(photoUrl, caption);
+
       toast.success("✅ Sent to Telegram!");
     } catch (err) {
-      console.error("handleUpload:", err);
+      console.error("Upload error:", err);
       toast.error("❌ Upload failed: " + (err.message || err));
     } finally {
-      setPhotoPreview(null);
+      setLoading(false);
       setMode(null);
       setTargetHouse(null);
-      stopCamera();
-      setLoading(false);
     }
   };
 
-  // ========== UI ==========
+  const handleSelfie = async (type) => {
+    try {
+      const facing = type === "selfieIn" || type === "selfieOut" ? "user" : "environment";
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: facing } },
+        audio: false,
+      });
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      await video.play();
+      const canvas = document.createElement("canvas");
+      canvas.width = 400;
+      canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, 400, 300);
+      const dataUrl = canvas.toDataURL("image/jpeg");
+      const blob = dataURLtoBlob(dataUrl);
+
+      const ts = Date.now();
+      const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
+      const folder = type === "selfieIn" ? "selfies/in" : "selfies/out";
+      const filePath = `${folder}/${guardName}_${plateNo}_${ts}.jpg`;
+      const photoUrl = await uploadToSupabase(filePath, blob);
+      const caption =
+        type === "selfieIn"
+          ? `🚨 Guard On Duty\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
+          : `✅ Patrol Ended\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
+      await sendTelegramPhoto(photoUrl, caption);
+      toast.success("✅ Selfie sent!");
+      stream.getTracks().forEach((t) => t.stop());
+    } catch (err) {
+      console.error("Selfie error:", err);
+      toast.error("Camera not accessible. Please allow permission.");
+    }
+  };
+
+  // ========= UI =========
   return (
     <div className="p-5 space-y-5 pb-16">
       <h1 className="text-2xl font-bold text-primary">
-        AHE SmartPatrol (Hybrid Stable)
+        AHE SmartPatrol (Web Stable)
       </h1>
 
       {!registered ? (
@@ -184,13 +156,13 @@ export default function RouteList_v11() {
           {/* Selfie Buttons */}
           <div className="flex gap-2">
             <button
-              onClick={() => openCameraSelector("selfieIn")}
+              onClick={() => handleSelfie("selfieIn")}
               className="bg-green-500 text-white px-4 py-2 rounded flex items-center gap-2"
             >
               <Camera className="w-4 h-4" /> Selfie IN
             </button>
             <button
-              onClick={() => openCameraSelector("selfieOut")}
+              onClick={() => handleSelfie("selfieOut")}
               className="bg-red-500 text-white px-4 py-2 rounded flex items-center gap-2"
             >
               <Camera className="w-4 h-4" /> Selfie OUT
@@ -226,12 +198,20 @@ export default function RouteList_v11() {
                   <Popup>
                     {a.house_no} {a.street_name} ({a.block})
                     <br />
-                    <button
-                      onClick={() => openCameraSelector("snapHouse", a)}
-                      className="bg-blue-500 text-white rounded px-2 py-1 mt-2"
-                    >
+                    <label className="bg-blue-500 text-white rounded px-2 py-1 mt-2 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        hidden
+                        ref={fileInputRef}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) handleUploadFile(file, a.house_no);
+                        }}
+                      />
                       Snap
-                    </button>
+                    </label>
                   </Popup>
                 </Marker>
               ))}
@@ -240,100 +220,15 @@ export default function RouteList_v11() {
         </>
       )}
 
-      {/* CAMERA SELECTOR */}
-      {selectorOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
-          <div className="bg-white p-5 rounded-xl shadow-lg w-[320px] text-center">
-            <h2 className="text-lg font-semibold mb-3">Select Camera</h2>
-            <div className="flex justify-around mb-4">
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="camera"
-                  value="user"
-                  checked={cameraFacing === "user"}
-                  onChange={() => setCameraFacing("user")}
-                />
-                Front
-              </label>
-              <label className="flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="camera"
-                  value="environment"
-                  checked={cameraFacing === "environment"}
-                  onChange={() => setCameraFacing("environment")}
-                />
-                Rear
-              </label>
-            </div>
-            <button
-              onClick={confirmCamera}
-              className="bg-accent text-white py-2 px-4 rounded w-full"
-            >
-              Start Camera
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* CAMERA MODAL */}
-      {mode && !selectorOpen && (
+      {loading && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
-          <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
-            <video
-              ref={videoRef}
-              width="400"
-              height="300"
-              className="rounded-md"
-              autoPlay
-              playsInline
-            />
-            <canvas ref={canvasRef} width="400" height="300" hidden />
-
-            {photoPreview ? (
-              <img
-                src={photoPreview}
-                alt="preview"
-                className="rounded-md my-3 w-full"
-              />
-            ) : (
-              <button
-                onClick={capturePhoto}
-                className="w-full bg-accent text-white py-2 rounded-lg mt-3"
-              >
-                Capture
-              </button>
-            )}
-            {photoPreview && (
-              <button
-                onClick={handleUpload}
-                className="w-full bg-green-600 text-white py-2 rounded-lg mt-2 flex justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
-                  </>
-                ) : (
-                  "Upload & Send"
-                )}
-              </button>
-            )}
-            <button
-              onClick={() => {
-                stopCamera();
-                setMode(null);
-                setPhotoPreview(null);
-                setTargetHouse(null);
-                setSelectorOpen(false);
-              }}
-              className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2"
-            >
-              Close
-            </button>
+          <div className="bg-white p-5 rounded-xl flex flex-col items-center gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-accent" />
+            <p>Uploading...</p>
           </div>
         </div>
       )}
+
       <GuardBottomNav />
     </div>
   );
