@@ -9,7 +9,11 @@ export async function sendTelegramAlert(type, payload) {
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: CHAT_ID, text: message }),
+      body: JSON.stringify({ 
+        chat_id: CHAT_ID, 
+        text: message,
+        parse_mode: "Markdown"
+      }),
     });
   } catch (error) {
     console.error("Telegram Alert Error:", error);
@@ -22,6 +26,7 @@ export async function sendTelegramPhoto(photoUrl, caption = "") {
     formData.append("chat_id", CHAT_ID);
     formData.append("photo", photoUrl);
     formData.append("caption", caption);
+    formData.append("parse_mode", "Markdown");
 
     await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
       method: "POST",

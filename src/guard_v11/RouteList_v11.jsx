@@ -1,10 +1,11 @@
-// PRU Patrol Sandbox v1.1 – RouteList_v11.jsx
+// AHE SmartPatrol v1.2 – RouteList_v11.jsx
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { sendTelegramPhoto } from "../shared_v11/api/telegram";
+import { sendTelegramAlert, sendTelegramPhoto } from "../shared_v11/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, CheckCircle, Clock } from "lucide-react";
 import GuardBottomNav from "../components/GuardBottomNav";
+import toast from "react-hot-toast";
 
 // Haversine function to calculate distance between two coordinates
 const haversine = (lat1, lng1, lat2, lng2) => {
@@ -20,14 +21,19 @@ const haversine = (lat1, lng1, lat2, lng2) => {
 
 export default function RouteList_v11() {
   const [assignments, setAssignments] = useState([]);
-  // guardName & plateNo are editable inputs; registration state is controlled by `registered`
-// guard wajib register setiap kali buka route page
-const [guardName, setGuardName] = useState("");
-const [plateNo, setPlateNo] = useState("");
-const [registered, setRegistered] = useState(false);
+  const [guardName, setGuardName] = useState("");
+  const [plateNo, setPlateNo] = useState("");
+  const [registered, setRegistered] = useState(false);
+
+  // Patrol session state
+  const [sessionActive, setSessionActive] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [completedHouses, setCompletedHouses] = useState([]);
+  const [currentHouseIndex, setCurrentHouseIndex] = useState(0);
 
   const [guardPos, setGuardPos] = useState(null);
-  const [mode, setMode] = useState(null); // "selfieIn" | "selfieOut" | "house"
+  const [gpsAccuracy, setGpsAccuracy] = useState(null);
+  const [mode, setMode] = useState(null); // "selfieIn" | "selfieOut" | "snapHouse"
   const [targetHouse, setTargetHouse] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -52,10 +58,11 @@ const [registered, setRegistered] = useState(false);
     fetchAssignments();
     const watch = navigator.geolocation.watchPosition(
       async (pos) => {
-        const { latitude, longitude } = pos.coords;
+        const { latitude, longitude, accuracy } = pos.coords;
         const currentTime = Date.now();
         
         setGuardPos([latitude, longitude]);
+        setGpsAccuracy(accuracy ? Math.round(accuracy) : 5);
         updateLocation(latitude, longitude);
         
         // Calculate speed if we have previous location data
@@ -190,7 +197,51 @@ const [registered, setRegistered] = useState(false);
   
     // ✅ tak simpan ke localStorage — guard wajib isi setiap kali buka
     setRegistered(true);
-    alert("✅ Registered successfully!");
+    toast.success("✅ Registered successfully!");
+  };
+
+  // ---------- PATROL SESSION MANAGEMENT ----------
+  const startPatrolSession = async () => {
+    try {
+      const startTime = new Date();
+      setSessionStartTime(startTime);
+      setSessionActive(true);
+      setCompletedHouses([]);
+      setCurrentHouseIndex(0);
+      
+      // Send Selfie In notification
+      await sendTelegramAlert("GUARD_ON_DUTY", {
+        message: `🚨 Guard On Duty\n👤 ${guardName}\n🏍️ ${plateNo}\n🕓 ${startTime.toLocaleString()}`
+      });
+      
+      toast.success("🚨 Patrol session started!");
+    } catch (err) {
+      console.error("Start session error:", err);
+      toast.error("Failed to start patrol session");
+    }
+  };
+
+  const completePatrolSession = async () => {
+    try {
+      const endTime = new Date();
+      const duration = Math.round((endTime - sessionStartTime) / 1000 / 60); // minutes
+      
+      // Send Selfie Out notification
+      await sendTelegramAlert("PATROL_COMPLETED", {
+        message: `✅ Patrol Session Completed\n👤 ${guardName}\n🏍️ ${plateNo}\n🕓 ${endTime.toLocaleString()}\n⏱️ Duration: ${duration} minutes`
+      });
+      
+      // Reset session state
+      setSessionActive(false);
+      setSessionStartTime(null);
+      setCompletedHouses([]);
+      setCurrentHouseIndex(0);
+      
+      toast.success("✅ Patrol session completed!");
+    } catch (err) {
+      console.error("Complete session error:", err);
+      toast.error("Failed to complete patrol session");
+    }
   };
   
   const handleResetRegistration = () => {
@@ -202,18 +253,30 @@ const [registered, setRegistered] = useState(false);
   };
 
   // ---------- CAMERA ----------
+  // ---------- CAMERA CONTROL ----------
   const openCamera = async (type, house = null) => {
     setMode(type);
     setTargetHouse(house);
+    
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Determine camera facing mode based on type
+      const facingMode = (type === "selfieIn" || type === "selfieOut") ? "user" : "environment";
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
     } catch (err) {
       console.error("openCamera error:", err);
-      alert("Camera not accessible.");
+      toast.error("Camera not accessible. Please check permissions.");
     }
   };
 
@@ -256,6 +319,61 @@ const [registered, setRegistered] = useState(false);
   };
 
   // ---------- HANDLE UPLOAD ----------
+  // ---------- HOUSE SNAPPING ----------
+  const snapHouse = async (house) => {
+    try {
+      setLoading(true);
+      const timestamp = Date.now();
+      const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
+      
+      // Upload photo to Supabase storage
+      const filePath = `patrol/${guardName}_${timestamp}.jpg`;
+      const photoUrl = await uploadToSupabase(filePath, photoPreview);
+      
+      // Save patrol record to database
+      const { error: insertError } = await supabase.from("patrol_records").insert({
+        guard_name: guardName,
+        plate_no: plateNo,
+        house_no: house.house_no,
+        street_name: house.street_name,
+        block: house.block,
+        lat: guardPos?.[0] || null,
+        lon: guardPos?.[1] || null,
+        photo_url: photoUrl,
+        timestamp: new Date().toISOString()
+      });
+      
+      if (insertError) throw insertError;
+      
+      // Send Telegram notification with enhanced GPS details
+      const lat = guardPos?.[0] || 0;
+      const lon = guardPos?.[1] || 0;
+      const accuracy = gpsAccuracy || 5;
+      
+      const telegramMessage = `📸 Guard snapped ${house.house_no}, ${house.block}
+👤 ${guardName}
+🏍️ ${plateNo}
+GPS: ${lat}, ${lon} (±${accuracy}m)
+OSM: https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=19/${lat}/${lon}
+Google: https://maps.google.com/?q=${lat},${lon}
+🕓 ${new Date().toLocaleString()}`;
+      
+      await sendTelegramPhoto(photoUrl, telegramMessage);
+      
+      // Update completed houses
+      setCompletedHouses(prev => [...prev, house.id]);
+      setCurrentHouseIndex(prev => prev + 1);
+      
+      toast.success(`📸 House ${house.house_no} snapped successfully!`);
+      
+    } catch (err) {
+      console.error("Snap house error:", err);
+      toast.error("Failed to snap house: " + (err.message || err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUpload = async () => {
     if (!photoPreview || !mode) return;
     setLoading(true);
@@ -265,43 +383,54 @@ const [registered, setRegistered] = useState(false);
       let photoUrl = "";
       let caption = "";
 
-      if (mode === "selfieIn" || mode === "selfieOut") {
-        const folder = mode === "selfieIn" ? "selfies/in" : "selfies/out";
+      if (mode === "selfieIn") {
+        const folder = "selfies/in";
         const filePath = `${folder}/${(guardName || "-")}_${(plateNo || "-")}_${ts}.jpg`;
         photoUrl = await uploadToSupabase(filePath, photoPreview);
-        caption =
-          mode === "selfieIn"
-            ? `🚨 Guard On Duty\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`
-            : `✅ Guard Off Duty\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
+        caption = `🚨 Guard On Duty\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
         
-        // Log selfie action
-        if (mode === "selfieIn") {
-          await logActivity("checkin", `Started patrol at Prima Residensi Utama`);
-        } else if (mode === "selfieOut") {
-          await logActivity("checkout", `Completed patrol at Prima Residensi Utama`);
-        }
-      } else if (mode === "house" && targetHouse) {
-        const filePath = `houses/${(guardName || "-")}_${targetHouse.house_no}_${ts}.jpg`;
+        await logActivity("checkin", `Started patrol at Prima Residensi Utama`);
+        await startPatrolSession();
+        
+      } else if (mode === "selfieOut") {
+        const folder = "selfies/out";
+        const filePath = `${folder}/${(guardName || "-")}_${(plateNo || "-")}_${ts}.jpg`;
         photoUrl = await uploadToSupabase(filePath, photoPreview);
-        caption = `📸 Patrol Proof\n👤 ${guardName}\n🏍️ ${plateNo}\n🏠 ${targetHouse.house_no} ${targetHouse.street_name} (${targetHouse.block})\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
-        // update assignment row (ensure RLS disabled or policy exists)
-        await supabase.from("patrol_assignments").update({ photo_url: photoUrl, status: "completed" }).eq("id", targetHouse.id);
         
-        // Log house patrol action
-        await logActivity("patrol", `Route completed at Prima Residensi Utama (${targetHouse.house_no})`);
+        // Enhanced GPS formatting for Selfie Out
+        const lat = guardPos?.[0] || 0;
+        const lon = guardPos?.[1] || 0;
+        const accuracy = gpsAccuracy || 5;
+        
+        caption = `✅ Patrol Session Completed
+👤 ${guardName}
+🏍️ ${plateNo}
+GPS: ${lat}, ${lon} (±${accuracy}m)
+OSM: https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=19/${lat}/${lon}
+Google: https://maps.google.com/?q=${lat},${lon}
+🕓 ${new Date().toLocaleString()}`;
+        
+        await logActivity("checkout", `Completed patrol at Prima Residensi Utama`);
+        await completePatrolSession();
+        
+      } else if (mode === "snapHouse" && targetHouse) {
+        await snapHouse(targetHouse);
+        setPhotoPreview(null);
+        setMode(null);
+        setTargetHouse(null);
+        return;
       }
 
-      // send to telegram
       await sendTelegramPhoto(photoUrl, caption);
 
-      alert("✅ Uploaded & sent to Telegram!");
+      toast.success("✅ Uploaded & sent to Telegram!");
       setPhotoPreview(null);
       setMode(null);
       setTargetHouse(null);
       fetchAssignments();
     } catch (err) {
       console.error("handleUpload:", err);
-      alert("❌ Upload failed: " + (err.message || err));
+      toast.error("❌ Upload failed: " + (err.message || err));
     } finally {
       setLoading(false);
     }
@@ -310,7 +439,7 @@ const [registered, setRegistered] = useState(false);
   // ---------- UI ----------
   return (
     <div className="p-5 space-y-5 pb-16">
-      <h1 className="text-2xl font-bold text-primary">Guard Dashboard v1.1</h1>
+      <h1 className="text-2xl font-bold text-primary">AHE SmartPatrol v1.2</h1>
 
       {/* REGISTER FORM */}
       {!registered ? (
@@ -354,14 +483,59 @@ const [registered, setRegistered] = useState(false);
         </div>
       ) : (
         <>
-          {/* SELFIE BUTTONS */}
-          <div className="flex gap-2">
-            <button onClick={() => openCamera("selfieIn")} className="bg-green-500 text-white px-4 py-2 rounded">
-              Selfie IN
-            </button>
-            <button onClick={() => openCamera("selfieOut")} className="bg-red-500 text-white px-4 py-2 rounded">
-              Selfie OUT
-            </button>
+          {/* PATROL SESSION STATUS */}
+          {sessionActive && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-5 h-5 text-blue-600" />
+                <span className="font-semibold text-blue-800">Patrol Session Active</span>
+              </div>
+              <p className="text-sm text-blue-600">
+                House {currentHouseIndex + 1} of {assignments.length} completed
+              </p>
+              <div className="w-full bg-blue-200 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${((currentHouseIndex) / assignments.length) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+
+          {/* PATROL CONTROL BUTTONS */}
+          <div className="flex gap-2 flex-wrap">
+            {!sessionActive ? (
+              <button 
+                onClick={() => openCamera("selfieIn")} 
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+              >
+                <Camera className="w-4 h-4" />
+                Selfie IN (Start Patrol)
+              </button>
+            ) : (
+              <>
+                <button 
+                  onClick={() => openCamera("selfieOut")} 
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Selfie OUT (End Patrol)
+                </button>
+                <button 
+                  onClick={() => {
+                    const nextHouse = assignments[currentHouseIndex];
+                    if (nextHouse) {
+                      openCamera("snapHouse", nextHouse);
+                    }
+                  }}
+                  disabled={currentHouseIndex >= assignments.length}
+                  className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-4 py-2 rounded flex items-center gap-2"
+                >
+                  <Camera className="w-4 h-4" />
+                  Snap Photo
+                </button>
+              </>
+            )}
           </div>
 
           {/* Clear Today's Session Button */}
@@ -397,17 +571,47 @@ const [registered, setRegistered] = useState(false);
             </MapContainer>
           </div>
 
-          {/* TASK LIST */}
+          {/* HOUSE ASSIGNMENTS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-            {assignments.map((a) => (
-              <div key={a.id} className={`p-4 rounded-xl shadow border ${a.status === "completed" ? "border-green-400 bg-green-50" : "border-yellow-300 bg-white"}`}>
-                <p className="font-semibold mb-1">🏠 {a.house_no} {a.street_name} ({a.block})</p>
-                <p className="text-sm mb-2">Session: {a.session_no}</p>
-                <button onClick={() => openCamera("house", a)} className="w-full bg-accent text-white py-2 rounded-lg flex justify-center items-center gap-1">
-                  <Camera className="w-4 h-4" /> Snap
-                </button>
-              </div>
-            ))}
+            {assignments.map((a, index) => {
+              const isCompleted = completedHouses.includes(a.id);
+              const isCurrent = sessionActive && index === currentHouseIndex;
+              
+              return (
+                <div 
+                  key={a.id} 
+                  className={`p-4 rounded-xl shadow border transition-all ${
+                    isCompleted 
+                      ? "border-green-400 bg-green-50" 
+                      : isCurrent 
+                        ? "border-blue-400 bg-blue-50 ring-2 ring-blue-300" 
+                        : "border-yellow-300 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold">🏠 {a.house_no} {a.street_name} ({a.block})</p>
+                    {isCompleted && <CheckCircle className="w-5 h-5 text-green-600" />}
+                    {isCurrent && <Clock className="w-5 h-5 text-blue-600" />}
+                  </div>
+                  <p className="text-sm mb-2">Session: {a.session_no}</p>
+                  
+                  {sessionActive && isCurrent && (
+                    <div className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mb-2">
+                      📍 Current House
+                    </div>
+                  )}
+                  
+                  {!sessionActive && (
+                    <button 
+                      onClick={() => openCamera("house", a)} 
+                      className="w-full bg-accent text-white py-2 rounded-lg flex justify-center items-center gap-1"
+                    >
+                      <Camera className="w-4 h-4" /> Snap
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </>
       )}
