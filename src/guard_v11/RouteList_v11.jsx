@@ -428,6 +428,11 @@ Google: https://maps.google.com/?q=${lat},${lon}
       setMode(null);
       setTargetHouse(null);
       fetchAssignments();
+      
+      // Refresh UI after successful operation
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (err) {
       console.error("handleUpload:", err);
       toast.error("❌ Upload failed: " + (err.message || err));
@@ -502,40 +507,24 @@ Google: https://maps.google.com/?q=${lat},${lon}
             </div>
           )}
 
-          {/* PATROL CONTROL BUTTONS */}
-          <div className="flex gap-2 flex-wrap">
-            {!sessionActive ? (
-              <button 
-                onClick={() => openCamera("selfieIn")} 
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
-              >
-                <Camera className="w-4 h-4" />
-                Selfie IN (Start Patrol)
-              </button>
-            ) : (
-              <>
-                <button 
-                  onClick={() => openCamera("selfieOut")} 
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded flex items-center gap-2"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Selfie OUT (End Patrol)
-                </button>
-                <button 
-                  onClick={() => {
-                    const nextHouse = assignments[currentHouseIndex];
-                    if (nextHouse) {
-                      openCamera("snapHouse", nextHouse);
-                    }
-                  }}
-                  disabled={currentHouseIndex >= assignments.length}
-                  className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-4 py-2 rounded flex items-center gap-2"
-                >
-                  <Camera className="w-4 h-4" />
-                  Snap Photo
-                </button>
-              </>
-            )}
+          {/* SELFIE BUTTONS */}
+          <div className="flex gap-2">
+            <button 
+              onClick={() => openCamera("selfieIn")} 
+              disabled={sessionActive}
+              className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white px-4 py-2 rounded flex items-center gap-2"
+            >
+              <Camera className="w-4 h-4" />
+              Selfie IN
+            </button>
+            <button 
+              onClick={() => openCamera("selfieOut")} 
+              disabled={!sessionActive}
+              className="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white px-4 py-2 rounded flex items-center gap-2"
+            >
+              <CheckCircle className="w-4 h-4" />
+              Selfie OUT
+            </button>
           </div>
 
           {/* Clear Today's Session Button */}
@@ -601,14 +590,14 @@ Google: https://maps.google.com/?q=${lat},${lon}
                     </div>
                   )}
                   
-                  {!sessionActive && (
-                    <button 
-                      onClick={() => openCamera("house", a)} 
-                      className="w-full bg-accent text-white py-2 rounded-lg flex justify-center items-center gap-1"
-                    >
-                      <Camera className="w-4 h-4" /> Snap
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => openCamera("snapHouse", a)} 
+                    disabled={!sessionActive || isCompleted}
+                    className="w-full bg-accent hover:bg-accent/80 disabled:bg-gray-400 text-white py-2 rounded-lg flex justify-center items-center gap-1"
+                  >
+                    <Camera className="w-4 h-4" /> 
+                    {isCompleted ? "Completed" : "Snap Photo"}
+                  </button>
                 </div>
               );
             })}
