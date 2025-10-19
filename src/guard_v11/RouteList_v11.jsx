@@ -1,4 +1,4 @@
-// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (FINAL rear camera fix)
+// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (rear/front camera synced with Incident logic)
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { sendTelegramPhoto } from "../shared_v11/api/telegram";
@@ -13,7 +13,7 @@ export default function RouteList_v11() {
   const [plateNo, setPlateNo] = useState("");
   const [registered, setRegistered] = useState(false);
   const [guardPos, setGuardPos] = useState(null);
-  const [mode, setMode] = useState(null);
+  const [mode, setMode] = useState(null); // selfieIn | selfieOut | snapHouse
   const [targetHouse, setTargetHouse] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -38,40 +38,24 @@ export default function RouteList_v11() {
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-  // CAMERA CONTROL – always rear for house
+  // CAMERA CONTROL (front for selfie, rear for house)
   const openCamera = async (type, house = null) => {
     setMode(type);
     setTargetHouse(house);
     try {
       const useRear = type === "snapHouse";
       const constraints = {
-        video: {
-          facingMode: useRear ? { ideal: "environment" } : "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+        video: { facingMode: useRear ? { ideal: "environment" } : "user" },
         audio: false,
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-
-      // Some Androids ignore facingMode -> apply manually if possible
-      const track = stream.getVideoTracks()[0];
-      if (useRear && track.getCapabilities) {
-        const caps = track.getCapabilities();
-        if (caps.facingMode && caps.facingMode.includes("environment")) {
-          await track
-            .applyConstraints({ facingMode: "environment" })
-            .catch(() => {});
-        }
-      }
-
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
     } catch (err) {
       console.error("openCamera error:", err);
-      toast.error("Camera not accessible. Allow permission & retry.");
+      toast.error("Camera not accessible. Please allow permission.");
     }
   };
 
