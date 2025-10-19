@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import RouteList_v11 from "../guard_v11/RouteList_v11.jsx";
 import SelfieCheckIn_v11 from "../guard_v11/SelfieCheckIn_v11.jsx";
 import IncidentForm_v11 from "../guard_v11/IncidentForm_v11.jsx";
@@ -23,6 +23,7 @@ export default function RouterV11() {
             <Route path="/v11-test/selfie" element={<SelfieCheckIn_v11 />} />
             <Route path="/v11-test/incident" element={<IncidentForm_v11 />} />
             <Route path="/v11-test/telegram" element={<TelegramTest_v11 />} />
+            <Route path="*" element={<Navigate to="/v11-test/route" replace />} />
 
           </Routes>
         </div>
