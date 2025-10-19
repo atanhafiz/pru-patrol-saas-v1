@@ -208,140 +208,179 @@ ${googleLink}
   };
 
   return (
-    <motion.div
-      className="bg-white rounded-2xl shadow-md p-6 mt-10"
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
-        <Upload className="w-5 h-5 text-accent" /> Submit Incident Report v1.1
-      </h2>
-
-      <form onSubmit={handleSubmit} className="space-y-4" disabled={loading}>
-        {/* Guard Name and Plate Number Fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Guard Name</label>
-            <input
-              type="text"
-              value={guardName}
-              onChange={(e) => setGuardName(e.target.value)}
-              disabled={loading}
-              className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none ${
-                loading ? "bg-gray-100 cursor-not-allowed" : ""
-              }`}
-              placeholder="Guard name"
-            />
+    <>
+      <motion.div
+        className="bg-white rounded-2xl shadow-md p-6 mt-10"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
+          <Upload className="w-5 h-5 text-accent" /> Submit Incident Report v1.1
+        </h2>
+  
+        <form onSubmit={handleSubmit} className="space-y-4" disabled={loading}>
+          {/* Guard Name and Plate Number Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Guard Name
+              </label>
+              <input
+                type="text"
+                value={guardName}
+                onChange={(e) => setGuardName(e.target.value)}
+                disabled={loading}
+                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none ${
+                  loading ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
+                placeholder="Guard name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Plate Number
+              </label>
+              <input
+                type="text"
+                value={plateNo}
+                onChange={(e) => setPlateNo(e.target.value)}
+                disabled={loading}
+                className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none ${
+                  loading ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
+                placeholder="Plate number"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Plate Number</label>
-            <input
-              type="text"
-              value={plateNo}
-              onChange={(e) => setPlateNo(e.target.value)}
-              disabled={loading}
-              className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none ${
-                loading ? "bg-gray-100 cursor-not-allowed" : ""
-              }`}
-              placeholder="Plate number"
-            />
+  
+          <textarea
+            placeholder="Describe the incident..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+            disabled={loading}
+            className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none resize-none ${
+              loading ? "bg-gray-100 cursor-not-allowed" : ""
+            }`}
+            rows={3}
+          />
+  
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              <label className="cursor-pointer flex items-center gap-3 text-accent font-medium hover:text-accent/80">
+                <Image className="w-5 h-5" />
+                <span>Attach Photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleFileChange}
+                />
+              </label>
+  
+              <button
+                type="button"
+                onClick={openCamera}
+                disabled={loading}
+                className="flex items-center gap-2 px-3 py-2 text-accent font-medium hover:text-accent/80 disabled:opacity-50"
+              >
+                <Camera className="w-5 h-5" />
+                <span>Camera</span>
+              </button>
+            </div>
+  
+            {preview && (
+              <motion.img
+                src={preview}
+                alt="Preview"
+                className="rounded-xl shadow-md max-h-56 object-cover"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              />
+            )}
           </div>
-        </div>
-
-        <textarea
-          placeholder="Describe the incident..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-          disabled={loading}
-          className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-accent outline-none resize-none ${
-            loading ? "bg-gray-100 cursor-not-allowed" : ""
-          }`}
-          rows={3}
-        />
-
-        <div className="flex flex-col gap-3">
-          <div className="flex gap-2">
-            <label className="cursor-pointer flex items-center gap-3 text-accent font-medium hover:text-accent/80">
-              <Image className="w-5 h-5" />
-              <span>Attach Photo</span>
-              <input type="file" accept="image/*" hidden onChange={handleFileChange} />
-            </label>
-            
-            <button
-              type="button"
-              onClick={openCamera}
-              disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 text-accent font-medium hover:text-accent/80 disabled:opacity-50"
+  
+          <button
+            type="submit"
+            disabled={loading}
+            className={`flex items-center gap-2 px-5 py-2 rounded-xl shadow transition ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-accent text-white hover:bg-accent/90"
+            }`}
+          >
+            <Send className="w-4 h-4" />
+            {loading ? "Submitting..." : "Submit Report"}
+          </button>
+  
+          {status && (
+            <div
+              className={`mt-2 p-3 rounded-lg text-sm ${
+                status.includes("✅")
+                  ? "bg-green-100 text-green-800 border border-green-200"
+                  : status.includes("❌")
+                  ? "bg-red-100 text-red-800 border border-red-200"
+                  : "bg-blue-100 text-blue-800 border border-blue-200"
+              }`}
             >
-              <Camera className="w-5 h-5" />
-              <span>Camera</span>
+              {status}
+            </div>
+          )}
+        </form>
+      </motion.div>
+  
+      {/* CAMERA MODAL */}
+      {mode === "camera" && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+          <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
+            <video
+              ref={videoRef}
+              width="400"
+              height="300"
+              className="rounded-md"
+              autoPlay
+              playsInline
+            />
+            <canvas ref={canvasRef} width="400" height="300" hidden />
+  
+            {photoPreview ? (
+              <img
+                src={photoPreview}
+                alt="preview"
+                className="rounded-md my-3 w-full"
+              />
+            ) : (
+              <button
+                onClick={capturePhoto}
+                className="w-full bg-accent text-white py-2 rounded-lg mt-3"
+              >
+                Capture
+              </button>
+            )}
+  
+            {photoPreview && (
+              <button
+                onClick={handleSubmit}
+                className="w-full bg-green-600 text-white py-2 rounded-lg mt-2"
+              >
+                Use Photo
+              </button>
+            )}
+  
+            <button
+              onClick={() => {
+                stopCamera();
+                setMode(null);
+                setPhotoPreview(null);
+              }}
+              className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2"
+            >
+              Close
             </button>
           </div>
-
-          {preview && (
-            <motion.img
-              src={preview}
-              alt="Preview"
-              className="rounded-xl shadow-md max-h-56 object-cover"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            />
-          )}
         </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={`flex items-center gap-2 px-5 py-2 rounded-xl shadow transition ${
-            loading 
-              ? "bg-gray-400 cursor-not-allowed" 
-              : "bg-accent text-white hover:bg-accent/90"
-          }`}
-        >
-          <Send className="w-4 h-4" /> 
-          {loading ? "Submitting..." : "Submit Report"}
-        </button>
-
-        {status && (
-          <div className={`mt-2 p-3 rounded-lg text-sm ${
-            status.includes("✅") 
-              ? "bg-green-100 text-green-800 border border-green-200" 
-              : status.includes("❌")
-              ? "bg-red-100 text-red-800 border border-red-200"
-              : "bg-blue-100 text-blue-800 border border-blue-200"
-          }`}>
-            {status}
-          </div>
-        )}
-      </form>
-
-{/* CAMERA MODAL */}
-{mode === "camera" && (
-  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
-    <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
-      <video ref={videoRef} width="400" height="300" className="rounded-md" autoPlay playsInline />
-      <canvas ref={canvasRef} width="400" height="300" hidden />
-
-      {photoPreview ? (
-        <img src={photoPreview} alt="preview" className="rounded-md my-3 w-full" />
-      ) : (
-        <button onClick={capturePhoto} className="w-full bg-accent text-white py-2 rounded-lg mt-3">
-          Capture
-        </button>
       )}
-
-      {photoPreview && (
-        <button onClick={handleSubmit} className="w-full bg-green-600 text-white py-2 rounded-lg mt-2">
-          Use Photo
-        </button>
-      )}
-
-      <button onClick={() => { stopCamera(); setMode(null); setPhotoPreview(null); }} 
-        className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2">
-        Close
-      </button>
-    </div>
-  </div>
-)}
+    </>
+  );
+}
