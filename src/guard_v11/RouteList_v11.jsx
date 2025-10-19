@@ -5,6 +5,7 @@ import { sendTelegramPhoto } from "../shared_v11/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Camera, Loader2 } from "lucide-react";
 import GuardBottomNav from "../components/GuardBottomNav";
+import HouseSnapUploader from "../components/HouseSnapUploader";
 import toast from "react-hot-toast";
 
 export default function RouteList_v11() {
@@ -207,12 +208,12 @@ export default function RouteList_v11() {
                   <Popup>
                     {a.house_no} {a.street_name} ({a.block})
                     <br />
-                    <button
-                      onClick={() => openCamera("snapHouse", a)}
-                      className="bg-blue-500 text-white rounded px-2 py-1 mt-2"
-                    >
-                      Snap
-                    </button>
+                    <HouseSnapUploader
+                      houseLabel={`${a.house_no} ${a.street_name} (${a.block})`}
+                      guardName={guardName}
+                      plateNo={plateNo}
+                      onUploaded={() => toast.success(`✅ ${a.house_no} uploaded`)}
+                    />
                   </Popup>
                 </Marker>
               ))}
