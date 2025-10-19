@@ -1,9 +1,9 @@
-// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (final with switch camera)
+// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (manual camera selector)
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { sendTelegramPhoto } from "../shared_v11/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { Camera, Loader2, RefreshCw } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import GuardBottomNav from "../components/GuardBottomNav";
 import toast from "react-hot-toast";
 
@@ -13,14 +13,16 @@ export default function RouteList_v11() {
   const [plateNo, setPlateNo] = useState("");
   const [registered, setRegistered] = useState(false);
   const [guardPos, setGuardPos] = useState(null);
-  const [mode, setMode] = useState(null);
+  const [mode, setMode] = useState(null); // selfieIn | selfieOut | snapHouse
   const [targetHouse, setTargetHouse] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [cameraFacing, setCameraFacing] = useState("user"); // switch
+  const [cameraFacing, setCameraFacing] = useState("environment"); // default
+  const [selectorOpen, setSelectorOpen] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
+  // --- Fetch assignments
   useEffect(() => {
     const fetchAssignments = async () => {
       const { data, error } = await supabase
@@ -39,18 +41,12 @@ export default function RouteList_v11() {
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-  // CAMERA CONTROL
-  const openCamera = async (type, house = null) => {
-    setMode(type);
-    setTargetHouse(house);
+  // --- Start camera (after user picks front/back)
+  const startCamera = async (facing) => {
     try {
-      const facingMode =
-        type === "selfieIn" || type === "selfieOut"
-          ? "user"
-          : { exact: "environment" };
-      setCameraFacing(facingMode === "user" ? "user" : "environment");
+      stopCamera();
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode },
+        video: { facingMode: { exact: facing } },
         audio: false,
       });
       if (videoRef.current) {
@@ -58,34 +54,32 @@ export default function RouteList_v11() {
         await videoRef.current.play();
       }
     } catch (err) {
-      console.error("openCamera error:", err);
-      toast.error("Camera not accessible. Please check permissions.");
+      console.error("Camera error:", err);
+      toast.error("Camera not accessible. Please check permission.");
     }
   };
 
   const stopCamera = () => {
     const stream = videoRef.current?.srcObject;
-    stream?.getTracks()?.forEach((t) => t.stop());
+    if (stream) stream.getTracks().forEach((t) => t.stop());
     if (videoRef.current) videoRef.current.srcObject = null;
   };
 
-  const switchCamera = async () => {
-    try {
-      const newFacing = cameraFacing === "user" ? "environment" : "user";
-      setCameraFacing(newFacing);
-      stopCamera();
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: newFacing } },
-        audio: false,
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-    } catch (err) {
-      console.error("switchCamera error:", err);
-      toast.error("Cannot switch camera. Device may not support this mode.");
+  const openCameraSelector = (type, house = null) => {
+    setMode(type);
+    setTargetHouse(house);
+    // default selection: rear if house, front if selfie
+    if (type === "selfieIn" || type === "selfieOut") {
+      setCameraFacing("user");
+    } else {
+      setCameraFacing("environment");
     }
+    setSelectorOpen(true);
+  };
+
+  const confirmCamera = async () => {
+    setSelectorOpen(false);
+    await startCamera(cameraFacing);
   };
 
   const capturePhoto = () => {
@@ -142,15 +136,17 @@ export default function RouteList_v11() {
       toast.success("✅ Sent to Telegram!");
     } catch (err) {
       console.error("handleUpload:", err);
-      toast.error("❌ Failed: " + (err.message || err));
+      toast.error("❌ Upload failed: " + (err.message || err));
     } finally {
       setPhotoPreview(null);
       setMode(null);
       setTargetHouse(null);
+      stopCamera();
       setLoading(false);
     }
   };
 
+  // ========== UI ==========
   return (
     <div className="p-5 space-y-5 pb-16">
       <h1 className="text-2xl font-bold text-primary">
@@ -185,21 +181,23 @@ export default function RouteList_v11() {
         </div>
       ) : (
         <>
+          {/* Selfie Buttons */}
           <div className="flex gap-2">
             <button
-              onClick={() => openCamera("selfieIn")}
+              onClick={() => openCameraSelector("selfieIn")}
               className="bg-green-500 text-white px-4 py-2 rounded flex items-center gap-2"
             >
               <Camera className="w-4 h-4" /> Selfie IN
             </button>
             <button
-              onClick={() => openCamera("selfieOut")}
+              onClick={() => openCameraSelector("selfieOut")}
               className="bg-red-500 text-white px-4 py-2 rounded flex items-center gap-2"
             >
               <Camera className="w-4 h-4" /> Selfie OUT
             </button>
           </div>
 
+          {/* Map */}
           <div className="h-[360px] w-full rounded-xl overflow-hidden shadow relative z-0">
             <MapContainer
               center={guardPos || [5.65, 100.5]}
@@ -229,7 +227,7 @@ export default function RouteList_v11() {
                     {a.house_no} {a.street_name} ({a.block})
                     <br />
                     <button
-                      onClick={() => openCamera("snapHouse", a)}
+                      onClick={() => openCameraSelector("snapHouse", a)}
                       className="bg-blue-500 text-white rounded px-2 py-1 mt-2"
                     >
                       Snap
@@ -242,7 +240,45 @@ export default function RouteList_v11() {
         </>
       )}
 
-      {mode && (
+      {/* CAMERA SELECTOR */}
+      {selectorOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
+          <div className="bg-white p-5 rounded-xl shadow-lg w-[320px] text-center">
+            <h2 className="text-lg font-semibold mb-3">Select Camera</h2>
+            <div className="flex justify-around mb-4">
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="camera"
+                  value="user"
+                  checked={cameraFacing === "user"}
+                  onChange={() => setCameraFacing("user")}
+                />
+                Front
+              </label>
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="camera"
+                  value="environment"
+                  checked={cameraFacing === "environment"}
+                  onChange={() => setCameraFacing("environment")}
+                />
+                Rear
+              </label>
+            </div>
+            <button
+              onClick={confirmCamera}
+              className="bg-accent text-white py-2 px-4 rounded w-full"
+            >
+              Start Camera
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CAMERA MODAL */}
+      {mode && !selectorOpen && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
             <video
@@ -254,16 +290,6 @@ export default function RouteList_v11() {
               playsInline
             />
             <canvas ref={canvasRef} width="400" height="300" hidden />
-
-            {/* SWITCH CAMERA BUTTON */}
-            {!photoPreview && (
-              <button
-                onClick={switchCamera}
-                className="absolute top-2 right-2 bg-gray-200 text-black px-2 py-1 rounded-md flex items-center gap-1 text-xs"
-              >
-                <RefreshCw size={12} /> Switch
-              </button>
-            )}
 
             {photoPreview ? (
               <img
@@ -299,6 +325,7 @@ export default function RouteList_v11() {
                 setMode(null);
                 setPhotoPreview(null);
                 setTargetHouse(null);
+                setSelectorOpen(false);
               }}
               className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2"
             >
