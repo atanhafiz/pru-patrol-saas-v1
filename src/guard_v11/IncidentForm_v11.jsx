@@ -33,23 +33,22 @@ export default function IncidentForm_v11() {
 
   // Camera functionality
   const openCamera = async () => {
+    setMode("camera");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" },
-        audio: false
+        audio: false,
       });
-      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setMode('camera');
+        videoRef.current.play();
       }
     } catch (err) {
-      console.error("Camera access failed:", err);
-      setStatus("❌ Camera access denied");
-      setTimeout(() => setStatus(""), 3000);
+      console.error("Camera access error:", err);
+      toast.error("Camera not accessible. Please allow permission.");
     }
   };
-
+  
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
@@ -318,52 +317,31 @@ ${googleLink}
         )}
       </form>
 
-      {/* Camera Modal */}
-      {mode === 'camera' && (
-        <motion.div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Take Photo</h3>
-              <button
-                onClick={closeCamera}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="relative">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                className="w-full h-64 bg-gray-900 rounded-xl object-cover"
-              />
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
-            
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={capturePhoto}
-                className="flex-1 bg-accent text-white py-3 px-4 rounded-xl font-medium hover:bg-accent/90"
-              >
-                Capture Photo
-              </button>
-              <button
-                onClick={closeCamera}
-                className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </motion.div>
+{/* CAMERA MODAL */}
+{mode === "camera" && (
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+    <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
+      <video ref={videoRef} width="400" height="300" className="rounded-md" autoPlay playsInline />
+      <canvas ref={canvasRef} width="400" height="300" hidden />
+
+      {photoPreview ? (
+        <img src={photoPreview} alt="preview" className="rounded-md my-3 w-full" />
+      ) : (
+        <button onClick={capturePhoto} className="w-full bg-accent text-white py-2 rounded-lg mt-3">
+          Capture
+        </button>
       )}
-    </motion.div>
-  );
-}
+
+      {photoPreview && (
+        <button onClick={handleSubmit} className="w-full bg-green-600 text-white py-2 rounded-lg mt-2">
+          Use Photo
+        </button>
+      )}
+
+      <button onClick={() => { stopCamera(); setMode(null); setPhotoPreview(null); }} 
+        className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2">
+        Close
+      </button>
+    </div>
+  </div>
+)}
