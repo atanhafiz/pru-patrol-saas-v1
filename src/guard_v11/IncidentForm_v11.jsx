@@ -1,245 +1,258 @@
-// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (rear camera fixed)
-import { useEffect, useState, useRef } from "react";
+// PRU Patrol Sandbox v1.1 – IncidentForm_v11.jsx (rear camera OK)
+import { useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { supabase } from "../lib/supabaseClient";
 import { sendTelegramPhoto } from "../shared_v11/api/telegram";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { Camera, Loader2 } from "lucide-react";
-import GuardBottomNav from "../components/GuardBottomNav";
-import toast from "react-hot-toast";
+import { Upload, Image, Send, Camera } from "lucide-react";
+import { logEvent } from "../lib/logEvent";
 
-export default function RouteList_v11() {
-  const [assignments, setAssignments] = useState([]);
-  const [guardName, setGuardName] = useState("");
-  const [plateNo, setPlateNo] = useState("");
-  const [registered, setRegistered] = useState(false);
-  const [guardPos, setGuardPos] = useState(null);
-  const [mode, setMode] = useState(null);
-  const [targetHouse, setTargetHouse] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
+export default function IncidentForm_v11() {
+  const [description, setDescription] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const [preview, setPreview] = useState("");
+  const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [guardName, setGuardName] = useState(localStorage.getItem("guardName") || "");
+  const [plateNo, setPlateNo] = useState(localStorage.getItem("plateNo") || "");
+  const [mode, setMode] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // fetch assignments
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      const { data, error } = await supabase
-        .from("patrol_assignments")
-        .select("*")
-        .order("session_no", { ascending: true });
-      if (!error) setAssignments(data || []);
-    };
-    fetchAssignments();
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPhoto(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
 
-    const watch = navigator.geolocation.watchPosition(
-      (pos) => setGuardPos([pos.coords.latitude, pos.coords.longitude]),
-      (err) => console.error("GPS error:", err),
-      { enableHighAccuracy: true }
-    );
-    return () => navigator.geolocation.clearWatch(watch);
-  }, []);
-
-  // CAMERA CONTROL (rear camera for snapHouse)
-  const openCamera = async (type, house = null) => {
-    setMode(type);
-    setTargetHouse(house);
+  const openCamera = async () => {
+    setMode("camera");
     try {
-      const facingMode =
-        type === "selfieIn" || type === "selfieOut"
-          ? "user"
-          : { exact: "environment" }; // rear camera for house snap
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode },
+      const constraints = {
+        video: { facingMode: { ideal: "environment" } },
         audio: false,
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
     } catch (err) {
-      console.error("openCamera error:", err);
-      toast.error("Camera not accessible. Please allow permission.");
+      console.error("Camera access error:", err);
+      alert("Camera not accessible. Please allow permission and reload.");
     }
-  };
-
-  const stopCamera = () => {
-    const stream = videoRef.current?.srcObject;
-    stream?.getTracks()?.forEach((t) => t.stop());
-    if (videoRef.current) videoRef.current.srcObject = null;
   };
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d");
-    ctx.drawImage(videoRef.current, 0, 0, 400, 300);
-    const dataUrl = canvasRef.current.toDataURL("image/jpeg");
-    setPhotoPreview(dataUrl);
-    stopCamera();
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    ctx.drawImage(videoRef.current, 0, 0);
+    const dataURL = canvas.toDataURL("image/jpeg");
+    setPhotoPreview(dataURL);
+    setPreview(dataURL);
+    const stream = videoRef.current.srcObject;
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    setMode(null);
   };
 
-  const dataURLtoBlob = (dataurl) => {
-    const arr = dataurl.split(",");
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    const u8arr = new Uint8Array(bstr.length);
-    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
-    return new Blob([u8arr], { type: mime });
+  const stopCamera = () => {
+    const stream = videoRef.current?.srcObject;
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    if (videoRef.current) videoRef.current.srcObject = null;
   };
 
-  const uploadToSupabase = async (filePath, dataUrl) => {
-    const blob = dataURLtoBlob(dataUrl);
-    const { error: upErr } = await supabase.storage
-      .from("patrol-photos")
-      .upload(filePath, blob, { contentType: "image/jpeg", upsert: true });
-    if (upErr) throw upErr;
-    const { data } = await supabase.storage
-      .from("patrol-photos")
-      .getPublicUrl(filePath);
-    return data.publicUrl;
+  const resetForm = () => {
+    setDescription("");
+    setPhoto(null);
+    setPreview("");
+    setPhotoPreview("");
+    setStatus("");
   };
 
-  const handleUpload = async () => {
-    if (!photoPreview || !mode) return;
+  const uploadPhoto = async (imageData) => {
+    let blob;
+    if (typeof imageData === "string" && imageData.startsWith("data:")) {
+      const res = await fetch(imageData);
+      blob = await res.blob();
+    } else blob = imageData;
+
+    const filePath = `incident/${guardName || "unknown"}_${Date.now()}.jpg`;
+    const { data, error } = await supabase.storage
+      .from("incident-photos")
+      .upload(filePath, blob, { upsert: true, contentType: "image/jpeg" });
+    if (error) throw error;
+    const { data: publicUrlData } = supabase.storage
+      .from("incident-photos")
+      .getPublicUrl(data.path);
+    return publicUrlData.publicUrl;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
+    setStatus("Getting location...");
     try {
-      const ts = Date.now();
-      const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
-      const folder =
-        mode === "selfieIn"
-          ? "selfies/in"
-          : mode === "selfieOut"
-          ? "selfies/out"
-          : "houses";
-      const filePath = `${folder}/${guardName}_${plateNo}_${ts}.jpg`;
-      const photoUrl = await uploadToSupabase(filePath, photoPreview);
-      const caption =
-        mode === "selfieIn"
-          ? `🚨 Guard On Duty\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
-          : mode === "selfieOut"
-          ? `✅ Patrol Session Ended\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
-          : `🏠 House Photo\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
-      await sendTelegramPhoto(photoUrl, caption);
-      toast.success("✅ Sent to Telegram!");
+      const position = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+        })
+      );
+      const lat = position?.coords?.latitude?.toFixed(6) ?? null;
+      const lon = position?.coords?.longitude?.toFixed(6) ?? null;
+      let photoUrl = null;
+      if (photoPreview) {
+        setStatus("Uploading camera photo...");
+        photoUrl = await uploadPhoto(photoPreview);
+      } else if (photo) {
+        setStatus("Uploading file photo...");
+        photoUrl = await uploadPhoto(photo);
+      }
+      setStatus("Saving incident...");
+      const { error: insertError } = await supabase.from("incidents").insert([
+        {
+          guard_name: guardName,
+          plate_no: plateNo,
+          description,
+          photo_url: photoUrl,
+          lat,
+          lon,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      if (insertError) throw insertError;
+
+      const osmLink = lat && lon ? `OSM: [OpenStreetMap](https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=19/${lat}/${lon})` : "";
+      const googleLink = lat && lon ? `Google: [Google Maps](https://maps.google.com/?q=${lat},${lon})` : "";
+      const caption = `🚨 New Incident Report
+👤 ${guardName}
+🏍️ ${plateNo}
+📝 ${description}
+${osmLink}
+${googleLink}
+🕓 ${new Date().toLocaleString()}`;
+      await sendTelegramPhoto(photoUrl || "", caption);
+      await logEvent("INCIDENT", description, "Guard");
+      resetForm();
+      setStatus("✅ Incident submitted successfully!");
+      setTimeout(() => setStatus(""), 3000);
     } catch (err) {
-      console.error("handleUpload:", err);
-      toast.error("❌ Failed: " + (err.message || err));
+      console.error("Incident submit failed:", err);
+      setStatus(`❌ Upload failed: ${err.message}`);
+      setTimeout(() => setStatus(""), 5000);
     } finally {
-      setPhotoPreview(null);
-      setMode(null);
-      setTargetHouse(null);
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-5 space-y-5 pb-16">
-      <h1 className="text-2xl font-bold text-primary">
-        AHE SmartPatrol (Hybrid Stable)
-      </h1>
+    <>
+      <motion.div
+        className="bg-white rounded-2xl shadow-md p-6 mt-10"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
+          <Upload className="w-5 h-5 text-accent" /> Submit Incident Report v1.1
+        </h2>
 
-      {!registered ? (
-        <div className="bg-white p-4 rounded-xl shadow max-w-md">
-          <h3 className="font-semibold mb-2">Register Guard</h3>
-          <input
-            placeholder="Guard Name"
-            value={guardName}
-            onChange={(e) => setGuardName(e.target.value)}
-            className="border p-2 rounded w-full mb-2"
-          />
-          <input
-            placeholder="Plate Number"
-            value={plateNo}
-            onChange={(e) => setPlateNo(e.target.value)}
-            className="border p-2 rounded w-full mb-3"
-          />
-          <button
-            onClick={() => {
-              if (!guardName) return toast.error("Please enter your name");
-              setRegistered(true);
-              toast.success("✅ Registered");
-            }}
-            className="bg-accent text-white px-4 py-2 rounded w-full"
-          >
-            Save
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="flex gap-2">
-            <button
-              onClick={() => openCamera("selfieIn")}
-              className="bg-green-500 text-white px-4 py-2 rounded flex items-center gap-2"
-            >
-              <Camera className="w-4 h-4" /> Selfie IN
-            </button>
-            <button
-              onClick={() => openCamera("selfieOut")}
-              className="bg-red-500 text-white px-4 py-2 rounded flex items-center gap-2"
-            >
-              <Camera className="w-4 h-4" /> Selfie OUT
-            </button>
-          </div>
-
-          <div className="h-[360px] w-full rounded-xl overflow-hidden shadow relative z-0">
-            <MapContainer
-              center={guardPos || [5.65, 100.5]}
-              zoom={16}
-              style={{ height: "100%", width: "100%" }}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution="&copy; OpenStreetMap"
+        <form onSubmit={handleSubmit} className="space-y-4" disabled={loading}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Guard Name
+              </label>
+              <input
+                type="text"
+                value={guardName}
+                onChange={(e) => setGuardName(e.target.value)}
+                disabled={loading}
+                className="w-full p-3 border rounded-xl"
+                placeholder="Guard name"
               />
-              {guardPos && (
-                <Marker position={guardPos}>
-                  <Popup>
-                    {guardName} ({plateNo})
-                  </Popup>
-                </Marker>
-              )}
-              {assignments.map((a) => (
-                <Marker
-                  key={a.id}
-                  position={[
-                    a.lat || 5.65 + Math.random() * 0.001,
-                    a.lng || 100.5 + Math.random() * 0.001,
-                  ]}
-                >
-                  <Popup>
-                    {a.house_no} {a.street_name} ({a.block})
-                    <br />
-                    <button
-                      onClick={() => openCamera("snapHouse", a)}
-                      className="bg-blue-500 text-white rounded px-2 py-1 mt-2"
-                    >
-                      Snap
-                    </button>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Plate Number
+              </label>
+              <input
+                type="text"
+                value={plateNo}
+                onChange={(e) => setPlateNo(e.target.value)}
+                disabled={loading}
+                className="w-full p-3 border rounded-xl"
+                placeholder="Plate number"
+              />
+            </div>
           </div>
-        </>
-      )}
 
-      {mode && (
+          <textarea
+            placeholder="Describe the incident..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+            disabled={loading}
+            className="w-full p-3 border rounded-xl resize-none"
+            rows={3}
+          />
+
+          <div className="flex gap-3">
+            <label className="cursor-pointer flex items-center gap-2 text-accent font-medium">
+              <Image className="w-5 h-5" />
+              Attach Photo
+              <input type="file" accept="image/*" hidden onChange={handleFileChange} />
+            </label>
+            <button
+              type="button"
+              onClick={openCamera}
+              className="flex items-center gap-2 px-3 py-2 text-accent font-medium"
+            >
+              <Camera className="w-5 h-5" /> Camera
+            </button>
+          </div>
+
+          {preview && (
+            <motion.img
+              src={preview}
+              alt="Preview"
+              className="rounded-xl shadow-md max-h-56 object-cover"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            />
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={`flex items-center gap-2 px-5 py-2 rounded-xl shadow ${
+              loading ? "bg-gray-400" : "bg-accent text-white hover:bg-accent/90"
+            }`}
+          >
+            <Send className="w-4 h-4" />
+            {loading ? "Submitting..." : "Submit Report"}
+          </button>
+
+          {status && (
+            <div className="mt-2 p-3 rounded-lg text-sm bg-blue-100 text-blue-800">
+              {status}
+            </div>
+          )}
+        </form>
+      </motion.div>
+
+      {mode === "camera" && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
-            <video
-              ref={videoRef}
-              width="400"
-              height="300"
-              className="rounded-md"
-              autoPlay
-              playsInline
-            />
+            <video ref={videoRef} width="400" height="300" autoPlay playsInline />
             <canvas ref={canvasRef} width="400" height="300" hidden />
             {photoPreview ? (
-              <img
-                src={photoPreview}
-                alt="preview"
-                className="rounded-md my-3 w-full"
-              />
+              <img src={photoPreview} alt="preview" className="rounded-md my-3 w-full" />
             ) : (
               <button
                 onClick={capturePhoto}
@@ -248,26 +261,11 @@ export default function RouteList_v11() {
                 Capture
               </button>
             )}
-            {photoPreview && (
-              <button
-                onClick={handleUpload}
-                className="w-full bg-green-600 text-white py-2 rounded-lg mt-2 flex justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
-                  </>
-                ) : (
-                  "Upload & Send"
-                )}
-              </button>
-            )}
             <button
               onClick={() => {
                 stopCamera();
                 setMode(null);
                 setPhotoPreview(null);
-                setTargetHouse(null);
               }}
               className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2"
             >
@@ -276,7 +274,6 @@ export default function RouteList_v11() {
           </div>
         </div>
       )}
-      <GuardBottomNav />
-    </div>
+    </>
   );
 }
