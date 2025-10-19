@@ -222,56 +222,64 @@ export default function RouteList_v11() {
       )}
 
       {mode && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
-          <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
-            <video
-              ref={videoRef}
-              width="400"
-              height="300"
-              className="rounded-md"
-              autoPlay
-              playsInline
-            />
-            <canvas ref={canvasRef} width="400" height="300" hidden />
-            {photoPreview ? (
-              <img
-                src={photoPreview}
-                alt="preview"
-                className="rounded-md my-3 w-full"
+        <div className="fixed inset-0 bg-black/30 z-[9999]">
+          {/* Bottom Sheet Overlay */}
+          <div className="fixed bottom-0 left-0 right-0 flex justify-center items-center p-4 bg-white/90 backdrop-blur rounded-t-2xl shadow-lg">
+            <div className="w-full max-w-md">
+              <video
+                ref={videoRef}
+                width="100%"
+                height="200"
+                className="rounded-lg w-full object-cover"
+                autoPlay
+                playsInline
               />
-            ) : (
-              <button
-                onClick={capturePhoto}
-                className="w-full bg-accent text-white py-2 rounded-lg mt-3"
-              >
-                Capture
-              </button>
-            )}
-            {photoPreview && (
-              <button
-                onClick={handleUpload}
-                className="w-full bg-green-600 text-white py-2 rounded-lg mt-2 flex justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
-                  </>
+              <canvas ref={canvasRef} width="400" height="300" hidden />
+              
+              <div className="mt-4 space-y-2">
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt="preview"
+                    className="rounded-lg w-full object-cover"
+                  />
                 ) : (
-                  "Upload & Send"
+                  <button
+                    onClick={capturePhoto}
+                    className="w-full bg-accent text-white py-2 rounded-lg"
+                  >
+                    Capture
+                  </button>
                 )}
-              </button>
-            )}
-            <button
-              onClick={() => {
-                stopCamera();
-                setMode(null);
-                setPhotoPreview(null);
-                setTargetHouse(null);
-              }}
-              className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2"
-            >
-              Close
-            </button>
+                
+                {photoPreview && (
+                  <button
+                    onClick={handleUpload}
+                    className="w-full bg-green-600 text-white py-2 rounded-lg flex justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                      </>
+                    ) : (
+                      "Upload & Send"
+                    )}
+                  </button>
+                )}
+                
+                <button
+                  onClick={() => {
+                    stopCamera();
+                    setMode(null);
+                    setPhotoPreview(null);
+                    setTargetHouse(null);
+                  }}
+                  className="w-full bg-gray-300 text-black py-2 rounded-lg"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
