@@ -1,11 +1,10 @@
-// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (rear/front camera synced with Incident logic)
+// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (final with switch camera)
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { sendTelegramPhoto } from "../shared_v11/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { Camera, Loader2 } from "lucide-react";
+import { Camera, Loader2, RefreshCw } from "lucide-react";
 import GuardBottomNav from "../components/GuardBottomNav";
-import HouseSnapUploader from "../components/HouseSnapUploader";
 import toast from "react-hot-toast";
 
 export default function RouteList_v11() {
@@ -14,10 +13,11 @@ export default function RouteList_v11() {
   const [plateNo, setPlateNo] = useState("");
   const [registered, setRegistered] = useState(false);
   const [guardPos, setGuardPos] = useState(null);
-  const [mode, setMode] = useState(null); // selfieIn | selfieOut | snapHouse
+  const [mode, setMode] = useState(null);
   const [targetHouse, setTargetHouse] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState("user"); // switch
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -39,7 +39,7 @@ export default function RouteList_v11() {
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-  // CAMERA CONTROL (front for selfie, rear for house)
+  // CAMERA CONTROL
   const openCamera = async (type, house = null) => {
     setMode(type);
     setTargetHouse(house);
@@ -48,6 +48,7 @@ export default function RouteList_v11() {
         type === "selfieIn" || type === "selfieOut"
           ? "user"
           : { exact: "environment" };
+      setCameraFacing(facingMode === "user" ? "user" : "environment");
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode },
         audio: false,
@@ -57,8 +58,8 @@ export default function RouteList_v11() {
         await videoRef.current.play();
       }
     } catch (err) {
-      console.error("Camera access error:", err);
-      toast.error("Camera not accessible. Please allow permission and reload.");
+      console.error("openCamera error:", err);
+      toast.error("Camera not accessible. Please check permissions.");
     }
   };
 
@@ -66,6 +67,25 @@ export default function RouteList_v11() {
     const stream = videoRef.current?.srcObject;
     stream?.getTracks()?.forEach((t) => t.stop());
     if (videoRef.current) videoRef.current.srcObject = null;
+  };
+
+  const switchCamera = async () => {
+    try {
+      const newFacing = cameraFacing === "user" ? "environment" : "user";
+      setCameraFacing(newFacing);
+      stopCamera();
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: newFacing } },
+        audio: false,
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+    } catch (err) {
+      console.error("switchCamera error:", err);
+      toast.error("Cannot switch camera. Device may not support this mode.");
+    }
   };
 
   const capturePhoto = () => {
@@ -208,12 +228,12 @@ export default function RouteList_v11() {
                   <Popup>
                     {a.house_no} {a.street_name} ({a.block})
                     <br />
-                    <HouseSnapUploader
-                      houseLabel={`${a.house_no} ${a.street_name} (${a.block})`}
-                      guardName={guardName}
-                      plateNo={plateNo}
-                      onUploaded={() => toast.success(`✅ ${a.house_no} uploaded`)}
-                    />
+                    <button
+                      onClick={() => openCamera("snapHouse", a)}
+                      className="bg-blue-500 text-white rounded px-2 py-1 mt-2"
+                    >
+                      Snap
+                    </button>
                   </Popup>
                 </Marker>
               ))}
@@ -223,64 +243,67 @@ export default function RouteList_v11() {
       )}
 
       {mode && (
-        <div className="fixed inset-0 bg-black/30 z-[9999]">
-          {/* Bottom Sheet Overlay */}
-          <div className="fixed bottom-0 left-0 right-0 flex justify-center items-center p-4 bg-white/90 backdrop-blur rounded-t-2xl shadow-lg">
-            <div className="w-full max-w-md">
-              <video
-                ref={videoRef}
-                width="100%"
-                height="200"
-                className="rounded-lg w-full object-cover"
-                autoPlay
-                playsInline
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+          <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
+            <video
+              ref={videoRef}
+              width="400"
+              height="300"
+              className="rounded-md"
+              autoPlay
+              playsInline
+            />
+            <canvas ref={canvasRef} width="400" height="300" hidden />
+
+            {/* SWITCH CAMERA BUTTON */}
+            {!photoPreview && (
+              <button
+                onClick={switchCamera}
+                className="absolute top-2 right-2 bg-gray-200 text-black px-2 py-1 rounded-md flex items-center gap-1 text-xs"
+              >
+                <RefreshCw size={12} /> Switch
+              </button>
+            )}
+
+            {photoPreview ? (
+              <img
+                src={photoPreview}
+                alt="preview"
+                className="rounded-md my-3 w-full"
               />
-              <canvas ref={canvasRef} width="400" height="300" hidden />
-              
-              <div className="mt-4 space-y-2">
-                {photoPreview ? (
-                  <img
-                    src={photoPreview}
-                    alt="preview"
-                    className="rounded-lg w-full object-cover"
-                  />
+            ) : (
+              <button
+                onClick={capturePhoto}
+                className="w-full bg-accent text-white py-2 rounded-lg mt-3"
+              >
+                Capture
+              </button>
+            )}
+            {photoPreview && (
+              <button
+                onClick={handleUpload}
+                className="w-full bg-green-600 text-white py-2 rounded-lg mt-2 flex justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                  </>
                 ) : (
-                  <button
-                    onClick={capturePhoto}
-                    className="w-full bg-accent text-white py-2 rounded-lg"
-                  >
-                    Capture
-                  </button>
+                  "Upload & Send"
                 )}
-                
-                {photoPreview && (
-                  <button
-                    onClick={handleUpload}
-                    className="w-full bg-green-600 text-white py-2 rounded-lg flex justify-center gap-2"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
-                      </>
-                    ) : (
-                      "Upload & Send"
-                    )}
-                  </button>
-                )}
-                
-                <button
-                  onClick={() => {
-                    stopCamera();
-                    setMode(null);
-                    setPhotoPreview(null);
-                    setTargetHouse(null);
-                  }}
-                  className="w-full bg-gray-300 text-black py-2 rounded-lg"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                stopCamera();
+                setMode(null);
+                setPhotoPreview(null);
+                setTargetHouse(null);
+              }}
+              className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
