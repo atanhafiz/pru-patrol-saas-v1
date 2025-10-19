@@ -80,6 +80,17 @@ export default function IncidentForm_v11() {
     setMode(null);
   };
 
+  const stopCamera = () => {
+    const stream = videoRef.current?.srcObject;
+    if (stream) {
+      const tracks = stream.getTracks();
+      tracks.forEach((track) => track.stop());
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
   const resetForm = () => {
     setDescription("");
     setPhoto(null);
