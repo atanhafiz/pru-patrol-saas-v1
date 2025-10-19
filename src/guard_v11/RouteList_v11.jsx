@@ -393,25 +393,44 @@ Google: https://maps.google.com/?q=${lat},${lon}
         await startPatrolSession();
         
       } else if (mode === "selfieOut") {
-        const folder = "selfies/out";
-        const filePath = `${folder}/${(guardName || "-")}_${(plateNo || "-")}_${ts}.jpg`;
-        photoUrl = await uploadToSupabase(filePath, photoPreview);
+        // Selfie Out with front camera capture
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user" },
+            audio: false
+          });
+          const videoTrack = stream.getVideoTracks()[0];
+          const imageCapture = new ImageCapture(videoTrack);
+          const blob = await imageCapture.takePhoto();
+
+          const photoUrl = URL.createObjectURL(blob);
+
+          // Send photo to Telegram
+          await sendTelegramPhoto(photoUrl, `✅ Patrol Session Ended\n👤 ${guardName}\n🏍️ ${plateNo}\n🕓 ${new Date().toLocaleString()}`);
+
+          // Then send text message
+          await sendTelegramAlert("SESSION", {
+            message: `✅ Patrol Session Ended\n👤 ${guardName}\n🏍️ ${plateNo}\n🕓 ${new Date().toLocaleString()}`
+          });
+
+          videoTrack.stop();
+          toast.success("Patrol session selfie captured and admin notified.");
+          
+        } catch (err) {
+          console.error("Selfie Out camera error:", err);
+          toast.error("Camera capture failed, sending text alert only.");
+          
+          // Fallback to text-only alert
+          await sendTelegramAlert("SESSION", {
+            message: `✅ Patrol Session Ended\n👤 ${guardName}\n🏍️ ${plateNo}\n🕓 ${new Date().toLocaleString()}`
+          });
+        }
         
-        // Enhanced GPS formatting for Selfie Out
-        const lat = guardPos?.[0] || 0;
-        const lon = guardPos?.[1] || 0;
-        const accuracy = gpsAccuracy || 5;
-        
-        caption = `✅ Patrol Session Completed
-👤 ${guardName}
-🏍️ ${plateNo}
-GPS: ${lat}, ${lon} (±${accuracy}m)
-OSM: https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=19/${lat}/${lon}
-Google: https://maps.google.com/?q=${lat},${lon}
-🕓 ${new Date().toLocaleString()}`;
-        
-        await logActivity("checkout", `Completed patrol at Prima Residensi Utama`);
-        await completePatrolSession();
+        // Skip photo upload and other processing
+        setPhotoPreview(null);
+        setMode(null);
+        setTargetHouse(null);
+        return;
         
       } else if (mode === "snapHouse" && targetHouse) {
         await snapHouse(targetHouse);
