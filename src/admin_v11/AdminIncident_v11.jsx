@@ -115,6 +115,8 @@ export default function AdminIncident_v11() {
                     {r.description}
                   </p>
 
+                  <p className="text-xs text-gray-500">👤 {r.guard_name || '-'}  •  🏍️ {r.plate_no || '-'}</p>
+
                   <p className="text-sm text-gray-500 flex items-center gap-1 mt-2">
                     <Clock className="w-3 h-3" />
                     {new Date(r.created_at).toLocaleString()}
