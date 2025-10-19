@@ -448,10 +448,12 @@ Google: https://maps.google.com/?q=${lat},${lon}
       setTargetHouse(null);
       fetchAssignments();
       
-      // Refresh UI after successful operation
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      // Only refresh UI for Selfie OUT, not Selfie IN
+      if (mode === "selfieOut") {
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      }
     } catch (err) {
       console.error("handleUpload:", err);
       toast.error("❌ Upload failed: " + (err.message || err));
