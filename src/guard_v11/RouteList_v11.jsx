@@ -1,4 +1,4 @@
-// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (Fixed rear camera)
+// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (FINAL rear camera fix)
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { sendTelegramPhoto } from "../shared_v11/api/telegram";
@@ -13,7 +13,7 @@ export default function RouteList_v11() {
   const [plateNo, setPlateNo] = useState("");
   const [registered, setRegistered] = useState(false);
   const [guardPos, setGuardPos] = useState(null);
-  const [mode, setMode] = useState(null); // "selfieIn" | "selfieOut" | "snapHouse"
+  const [mode, setMode] = useState(null);
   const [targetHouse, setTargetHouse] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -38,26 +38,40 @@ export default function RouteList_v11() {
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-  // CAMERA CONTROL — rear for house, front for selfie
+  // CAMERA CONTROL – always rear for house
   const openCamera = async (type, house = null) => {
     setMode(type);
     setTargetHouse(house);
     try {
-      const facingMode =
-        type === "selfieIn" || type === "selfieOut"
-          ? "user"
-          : { exact: "environment" };
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode },
+      const useRear = type === "snapHouse";
+      const constraints = {
+        video: {
+          facingMode: useRear ? { ideal: "environment" } : "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
         audio: false,
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      // Some Androids ignore facingMode -> apply manually if possible
+      const track = stream.getVideoTracks()[0];
+      if (useRear && track.getCapabilities) {
+        const caps = track.getCapabilities();
+        if (caps.facingMode && caps.facingMode.includes("environment")) {
+          await track
+            .applyConstraints({ facingMode: "environment" })
+            .catch(() => {});
+        }
+      }
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
     } catch (err) {
       console.error("openCamera error:", err);
-      toast.error("Camera not accessible. Please check permissions.");
+      toast.error("Camera not accessible. Allow permission & retry.");
     }
   };
 
@@ -205,7 +219,8 @@ export default function RouteList_v11() {
                   ]}
                 >
                   <Popup>
-                    {a.house_no} {a.street_name} ({a.block}) <br />
+                    {a.house_no} {a.street_name} ({a.block})
+                    <br />
                     <button
                       onClick={() => openCamera("snapHouse", a)}
                       className="bg-blue-500 text-white rounded px-2 py-1 mt-2"
@@ -274,7 +289,6 @@ export default function RouteList_v11() {
           </div>
         </div>
       )}
-
       <GuardBottomNav />
     </div>
   );
