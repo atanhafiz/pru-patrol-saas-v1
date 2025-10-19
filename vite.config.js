@@ -6,7 +6,7 @@ dotenv.config();
 
 export default defineConfig({
   plugins: [react()],
-  base: "./", // for Netlify relative paths
+  base: "/", // 🔥 penting untuk Netlify handle SPA route
   define: {
     "process.env": process.env,
   },
