@@ -4,38 +4,17 @@ import { supabase } from "../lib/supabaseClient";
 import { AlertTriangle, Clock, Image, Trash2 } from "lucide-react";
 import LoadingSpinner from "../shared_v11/components/LoadingSpinner";
 import ErrorBoundary from "../shared_v11/components/ErrorBoundary";
-import { useRealtime } from "../shared_v11/hooks/useRealtime";
+import { useRealtimeIncidents } from "../shared_v11/hooks/useRealtime_v11";
+import { useLiveAlertsV11 } from "../shared_v11/hooks/useLiveAlerts_v11";
 
 export default function AdminIncident_v11() {
-  const [reports, setReports] = useState([]);
   const [isArchiving, setIsArchiving] = useState(false);
 
-  // Use the centralized realtime hook
-  const { data: realtimeReports, loading } = useRealtime('incidents', {
-    select: "*",
-    filter: { status: "active" },
-    order: { created_at: "desc" }
-  });
+  // Use the realtime incidents hook
+  const { data: incidents, loading, error } = useRealtimeIncidents();
 
-  const fetchReports = async () => {
-    const { data, error } = await supabase
-      .from("incidents")
-      .select("*")
-      .eq("status", "active")
-      .order("created_at", { ascending: false });
-    if (!error) setReports(data);
-  };
-
-  useEffect(() => {
-    fetchReports();
-  }, []);
-
-  // Update reports when realtime data changes
-  useEffect(() => {
-    if (realtimeReports) {
-      setReports(realtimeReports);
-    }
-  }, [realtimeReports]);
+  // 🔔 Live Alerts for incidents
+  useLiveAlertsV11(incidents, "incident");
 
   // Auto-archive old reports on component mount
   useEffect(() => {
@@ -65,7 +44,6 @@ export default function AdminIncident_v11() {
       if (error) throw error;
       
       alert("✅ Old reports archived successfully!");
-      fetchReports(); // refresh UI
     } catch (err) {
       console.error("Archive error:", err);
       alert("❌ Failed to archive reports: " + err.message);
@@ -74,13 +52,8 @@ export default function AdminIncident_v11() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+  if (loading) return <p>Loading incidents...</p>;
+  if (error) return <p className="text-red-500">Error: {error}</p>;
 
   return (
     <ErrorBoundary>
@@ -105,11 +78,11 @@ export default function AdminIncident_v11() {
           </button>
         </div>
 
-        {reports.length === 0 ? (
+        {incidents?.length === 0 ? (
           <p className="text-gray-400 italic">No incidents reported yet.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reports.map((r, idx) => (
+            {incidents?.map((r, idx) => (
               <motion.div
                 key={r.id}
                 className="rounded-2xl bg-white shadow-md hover:shadow-2xl transition border border-gray-100 overflow-hidden"

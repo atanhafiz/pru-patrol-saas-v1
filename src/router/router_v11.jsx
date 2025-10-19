@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RouteList_v11 from "../guard_v11/RouteList_v11.jsx";
 import SelfieCheckIn_v11 from "../guard_v11/SelfieCheckIn_v11.jsx";
 import IncidentForm_v11 from "../guard_v11/IncidentForm_v11.jsx";
+import TelegramTest_v11 from "../guard_v11/TelegramTest_v11.jsx";
 
 export default function RouterV11() {
   return (
@@ -21,6 +22,8 @@ export default function RouterV11() {
             <Route path="/v11-test/route" element={<RouteList_v11 />} />
             <Route path="/v11-test/selfie" element={<SelfieCheckIn_v11 />} />
             <Route path="/v11-test/incident" element={<IncidentForm_v11 />} />
+            <Route path="/v11-test/telegram" element={<TelegramTest_v11 />} />
+
           </Routes>
         </div>
       </div>

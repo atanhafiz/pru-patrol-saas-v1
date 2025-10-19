@@ -2,9 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, MapPin, CheckCircle } from "lucide-react";
-import { supabase } from "../../lib/supabaseClient";
-import { logEvent } from "../../lib/logEvent";
-import { sendTelegramPhoto } from "../../lib/telegram";
+import { supabase } from "../lib/supabaseClient";
+import { logEvent } from "../lib/logEvent";
+import { sendTelegramPhoto } from "../shared_v11/api/telegram";
 
 export default function SelfieCheckIn_v11() {
   const videoRef = useRef(null);

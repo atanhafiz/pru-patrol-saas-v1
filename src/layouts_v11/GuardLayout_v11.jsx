@@ -8,11 +8,10 @@ export default function GuardLayout_v11() {
   const location = useLocation();
 
   const navItems = [
-    { path: "/guard/dashboard", icon: <Home size={20} />, label: "Home" },
-    { path: "/guard/routes", icon: <ListChecks size={20} />, label: "Routes" },
-    { path: "/guard/selfie", icon: <Camera size={20} />, label: "Selfie" },
-    { path: "/guard/incident", icon: <FileText size={20} />, label: "Report" },
-    { path: "/guard/timeline", icon: <Clock3 size={20} />, label: "Timeline" },
+    { path: "/v11-test/route", icon: <ListChecks size={20} />, label: "Routes" },
+    { path: "/v11-test/selfie", icon: <Camera size={20} />, label: "Selfie" },
+    { path: "/v11-test/incident", icon: <FileText size={20} />, label: "Report" },
+    { path: "/v11-test/telegram", icon: <Home size={20} />, label: "Test" },
   ];
 
   return (

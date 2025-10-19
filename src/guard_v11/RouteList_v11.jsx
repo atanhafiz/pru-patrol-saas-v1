@@ -1,10 +1,10 @@
 // PRU Patrol Sandbox v1.1 – RouteList_v11.jsx
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "../../lib/supabaseClient";
-import { sendTelegramPhoto } from "../../lib/telegram";
+import { supabase } from "../lib/supabaseClient";
+import { sendTelegramPhoto } from "../shared_v11/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Camera, Loader2 } from "lucide-react";
-import GuardBottomNav from "../../components/GuardBottomNav";
+import GuardBottomNav from "../components/GuardBottomNav";
 
 // Haversine function to calculate distance between two coordinates
 const haversine = (lat1, lng1, lat2, lng2) => {

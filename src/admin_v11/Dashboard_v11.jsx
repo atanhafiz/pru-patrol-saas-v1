@@ -1,9 +1,10 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { sendTelegramAlert } from "../shared_v11/api/telegram";
 import { useRealtime } from "../shared_v11/hooks/useRealtime";
+import { useLiveAlertsV11 } from "../shared_v11/hooks/useLiveAlerts_v11";
 import {
   ShieldCheck,
   ClipboardCheck,
@@ -50,6 +51,20 @@ export default function AdminDashboard_v11() {
   const [pendingReports, setPendingReports] = useState(0);
   const [incidentsToday, setIncidentsToday] = useState(0);
 
+  // 🔥 Live Realtime Data
+  const { data: attendance } = useRealtime('attendance_log');
+  const { data: activity } = useRealtime('activity_log');
+  const { data: incidents } = useRealtime('incidents');
+
+  // 📊 Computed Live Counters
+  const totalGuards = attendance?.length || 0;
+  const totalIncidents = activity?.filter(a => a.action?.includes("incident"))?.length || 0;
+  const lastUpdate = activity?.[0]?.created_at || attendance?.[0]?.created_at || null;
+
+  // 🔔 Live Alerts
+  useLiveAlertsV11(attendance, "attendance");
+  useLiveAlertsV11(activity, "activity");
+
   // 🧾 Activity Log Auto-Fetch
   useEffect(() => {
     fetchLogs();
@@ -72,20 +87,30 @@ export default function AdminDashboard_v11() {
   }, []);
 
   const fetchLogs = async () => {
-    const { data, error } = await supabase
-      .from("activity_log")
-      .select("*")
-      .order("time", { ascending: false })
-      .limit(50);
-    if (!error) setActivityLogs(data || []);
+    try {
+      const { data, error } = await supabase
+        .from("activity_log")
+        .select("*")
+        .order("time", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      setActivityLogs(data || []);
+    } catch (err) {
+      console.error("[Dashboard] Error fetching logs:", err);
+    }
   };
 
   const fetchAssignments = async () => {
-    const { data, error } = await supabase
-      .from("patrol_assignments")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error) setAssignments(data || []);
+    try {
+      const { data, error } = await supabase
+        .from("patrol_assignments")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setAssignments(data || []);
+    } catch (err) {
+      console.error("[Dashboard] Error fetching assignments:", err);
+    }
   };
 
   const fetchDashboardMetrics = async () => {
@@ -222,6 +247,60 @@ export default function AdminDashboard_v11() {
             <AdminAlertCenter />
           </div>
         </motion.div>
+
+        {/* 🔥 Live Counters Section */}
+        <section className="grid grid-cols-3 gap-3 text-center mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white/5 rounded-xl py-3"
+          >
+            <p className="text-xs text-gray-400">Active Guards</p>
+            <motion.p
+              key={totalGuards}
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ duration: 0.4 }}
+              className="text-xl font-bold"
+            >
+              {totalGuards}
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="bg-white/5 rounded-xl py-3"
+          >
+            <p className="text-xs text-gray-400">Incidents Today</p>
+            <motion.p
+              key={totalIncidents}
+              animate={{ scale: [1, 1.3, 1] }}
+              transition={{ duration: 0.4 }}
+              className="text-xl font-bold text-red-400"
+            >
+              {totalIncidents}
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="bg-white/5 rounded-xl py-3"
+          >
+            <p className="text-xs text-gray-400">Last Update</p>
+            <motion.p
+              key={lastUpdate}
+              animate={{ opacity: [0.5, 1], scale: [0.9, 1.1, 1] }}
+              transition={{ duration: 0.5 }}
+              className="text-xs text-green-400"
+            >
+              {lastUpdate ? new Date(lastUpdate).toLocaleTimeString() : "-"}
+            </motion.p>
+          </motion.div>
+        </section>
 
         {/* Quick Actions */}
         <motion.div

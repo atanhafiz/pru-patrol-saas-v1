@@ -1,10 +1,10 @@
 // PRU Patrol Sandbox v1.1 – IncidentForm_v11.jsx
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { supabase } from "../../lib/supabaseClient";
-import { sendTelegramPhoto } from "../../lib/telegram";
+import { supabase } from "../lib/supabaseClient";
+import { sendTelegramPhoto } from "../shared_v11/api/telegram";
 import { Upload, Image, Send } from "lucide-react";
-import { logEvent } from "../../lib/logEvent";
+import { logEvent } from "../lib/logEvent";
 
 export default function IncidentForm_v11() {
   const [description, setDescription] = useState("");
@@ -33,9 +33,6 @@ export default function IncidentForm_v11() {
     setLoading(true);
     setStatus("Uploading...");
 
-    // Debug logs
-    console.log("🔍 URL:", import.meta.env.VITE_SUPABASE_URL);
-    console.log("🔍 KEY:", import.meta.env.VITE_SUPABASE_KEY ? "✅ detected" : "❌ missing");
 
     try {
       const guardName = localStorage.getItem("guardName") || "-";

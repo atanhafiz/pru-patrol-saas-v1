@@ -10,10 +10,10 @@ export default function AdminLayout_v11() {
   const navigate = useNavigate();
 
   const navItems = [
-    { path: "/admin/dashboard", icon: <Home size={18} />, label: "Dashboard" },
-    { path: "/admin/map", icon: <Map size={18} />, label: "Live Map" },
-    { path: "/admin/incidents", icon: <AlertTriangle size={18} />, label: "Incidents" },
-    { path: "/admin/guards", icon: <Users size={18} />, label: "Guards" },
+    { path: "/v11-test/route", icon: <Home size={18} />, label: "Dashboard" },
+    { path: "/v11-test/selfie", icon: <Map size={18} />, label: "Selfie" },
+    { path: "/v11-test/incident", icon: <AlertTriangle size={18} />, label: "Incidents" },
+    { path: "/v11-test/telegram", icon: <Users size={18} />, label: "Test" },
   ];
 
   return (
