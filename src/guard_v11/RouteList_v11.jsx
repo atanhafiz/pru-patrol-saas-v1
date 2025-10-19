@@ -43,19 +43,21 @@ export default function RouteList_v11() {
     setMode(type);
     setTargetHouse(house);
     try {
-      const useRear = type === "snapHouse";
-      const constraints = {
-        video: { facingMode: useRear ? { ideal: "environment" } : "user" },
+      const facingMode =
+        type === "selfieIn" || type === "selfieOut"
+          ? "user"
+          : { exact: "environment" };
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode },
         audio: false,
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
     } catch (err) {
-      console.error("openCamera error:", err);
-      toast.error("Camera not accessible. Please allow permission.");
+      console.error("Camera access error:", err);
+      toast.error("Camera not accessible. Please allow permission and reload.");
     }
   };
 
