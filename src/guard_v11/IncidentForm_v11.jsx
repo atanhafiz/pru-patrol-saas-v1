@@ -35,20 +35,21 @@ export default function IncidentForm_v11() {
   const openCamera = async () => {
     setMode("camera");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+      const constraints = {
+        video: { facingMode: { exact: "environment" } },
         audio: false,
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        await videoRef.current.play();
       }
     } catch (err) {
       console.error("Camera access error:", err);
-      toast.error("Camera not accessible. Please allow permission.");
+      alert("Camera not accessible. Please allow permission and reload.");
     }
   };
-  
+    
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;

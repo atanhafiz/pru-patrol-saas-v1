@@ -1,4 +1,4 @@
-// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx
+// AHE SmartPatrol Hybrid Stable – RouteList_v11.jsx (Fixed rear camera)
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { sendTelegramPhoto } from "../shared_v11/api/telegram";
@@ -20,17 +20,16 @@ export default function RouteList_v11() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // FETCH ASSIGNMENTS
-  const fetchAssignments = async () => {
-    const { data, error } = await supabase
-      .from("patrol_assignments")
-      .select("*")
-      .order("session_no", { ascending: true });
-    if (!error) setAssignments(data || []);
-  };
-
   useEffect(() => {
+    const fetchAssignments = async () => {
+      const { data, error } = await supabase
+        .from("patrol_assignments")
+        .select("*")
+        .order("session_no", { ascending: true });
+      if (!error) setAssignments(data || []);
+    };
     fetchAssignments();
+
     const watch = navigator.geolocation.watchPosition(
       (pos) => setGuardPos([pos.coords.latitude, pos.coords.longitude]),
       (err) => console.error("GPS error:", err),
@@ -39,26 +38,28 @@ export default function RouteList_v11() {
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-// CAMERA CONTROL
-const openCamera = async (type, house = null) => {
-  setMode(type);
-  setTargetHouse(house);
-  try {
-    // Guna rear camera bila snap rumah, selfie bila selfieIn/selfieOut
-    const facingMode = type === "snapHouse" ? { exact: "environment" } : "user";
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode },
-      audio: false
-    });
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play();
+  // CAMERA CONTROL — rear for house, front for selfie
+  const openCamera = async (type, house = null) => {
+    setMode(type);
+    setTargetHouse(house);
+    try {
+      const facingMode =
+        type === "selfieIn" || type === "selfieOut"
+          ? "user"
+          : { exact: "environment" };
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode },
+        audio: false,
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+    } catch (err) {
+      console.error("openCamera error:", err);
+      toast.error("Camera not accessible. Please check permissions.");
     }
-  } catch (err) {
-    console.error("openCamera error:", err);
-    toast.error("Camera not accessible. Please check permissions.");
-  }
-};
+  };
 
   const stopCamera = () => {
     const stream = videoRef.current?.srcObject;
@@ -75,7 +76,6 @@ const openCamera = async (type, house = null) => {
     stopCamera();
   };
 
-  // Helper: convert base64 to blob
   const dataURLtoBlob = (dataurl) => {
     const arr = dataurl.split(",");
     const mime = arr[0].match(/:(.*?);/)[1];
@@ -85,7 +85,6 @@ const openCamera = async (type, house = null) => {
     return new Blob([u8arr], { type: mime });
   };
 
-  // Upload to Supabase
   const uploadToSupabase = async (filePath, dataUrl) => {
     const blob = dataURLtoBlob(dataUrl);
     const { error: upErr } = await supabase.storage
@@ -98,59 +97,54 @@ const openCamera = async (type, house = null) => {
     return data.publicUrl;
   };
 
-  // HANDLE UPLOAD
   const handleUpload = async () => {
     if (!photoPreview || !mode) return;
     setLoading(true);
     try {
       const ts = Date.now();
       const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
-      let photoUrl = "";
-      let caption = "";
-
-      // selfie in / out only
-      if (mode === "selfieIn" || mode === "selfieOut") {
-        const folder = mode === "selfieIn" ? "selfies/in" : "selfies/out";
-        const filePath = `${folder}/${guardName}_${plateNo}_${ts}.jpg`;
-        photoUrl = await uploadToSupabase(filePath, photoPreview);
-
-        caption =
-          mode === "selfieIn"
-            ? `🚨 Guard On Duty\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`
-            : `✅ Patrol Session Ended\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
-
-        await sendTelegramPhoto(photoUrl, caption);
-      }
-
+      const folder =
+        mode === "selfieIn"
+          ? "selfies/in"
+          : mode === "selfieOut"
+          ? "selfies/out"
+          : "houses";
+      const filePath = `${folder}/${guardName}_${plateNo}_${ts}.jpg`;
+      const photoUrl = await uploadToSupabase(filePath, photoPreview);
+      const caption =
+        mode === "selfieIn"
+          ? `🚨 Guard On Duty\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
+          : mode === "selfieOut"
+          ? `✅ Patrol Session Ended\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
+          : `🏠 House Photo\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
+      await sendTelegramPhoto(photoUrl, caption);
       toast.success("✅ Sent to Telegram!");
-      setPhotoPreview(null);
-      setMode(null);
-      setTargetHouse(null);
     } catch (err) {
       console.error("handleUpload:", err);
       toast.error("❌ Failed: " + (err.message || err));
     } finally {
+      setPhotoPreview(null);
+      setMode(null);
+      setTargetHouse(null);
       setLoading(false);
     }
   };
 
-  // ---------- UI ----------
   return (
     <div className="p-5 space-y-5 pb-16">
-      <h1 className="text-2xl font-bold text-primary">AHE SmartPatrol (Hybrid Stable)</h1>
+      <h1 className="text-2xl font-bold text-primary">
+        AHE SmartPatrol (Hybrid Stable)
+      </h1>
 
-      {/* REGISTER FORM */}
       {!registered ? (
         <div className="bg-white p-4 rounded-xl shadow max-w-md">
           <h3 className="font-semibold mb-2">Register Guard</h3>
-          <label className="text-xs text-gray-500">Guard Name</label>
           <input
             placeholder="Guard Name"
             value={guardName}
             onChange={(e) => setGuardName(e.target.value)}
             className="border p-2 rounded w-full mb-2"
           />
-          <label className="text-xs text-gray-500">Plate Number</label>
           <input
             placeholder="Plate Number"
             value={plateNo}
@@ -170,23 +164,21 @@ const openCamera = async (type, house = null) => {
         </div>
       ) : (
         <>
-          {/* SELFIE BUTTONS */}
           <div className="flex gap-2">
             <button
               onClick={() => openCamera("selfieIn")}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
+              className="bg-green-500 text-white px-4 py-2 rounded flex items-center gap-2"
             >
               <Camera className="w-4 h-4" /> Selfie IN
             </button>
             <button
               onClick={() => openCamera("selfieOut")}
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded flex items-center gap-2"
+              className="bg-red-500 text-white px-4 py-2 rounded flex items-center gap-2"
             >
               <Camera className="w-4 h-4" /> Selfie OUT
             </button>
           </div>
 
-          {/* MAP */}
           <div className="h-[360px] w-full rounded-xl overflow-hidden shadow relative z-0">
             <MapContainer
               center={guardPos || [5.65, 100.5]}
@@ -199,7 +191,9 @@ const openCamera = async (type, house = null) => {
               />
               {guardPos && (
                 <Marker position={guardPos}>
-                  <Popup>{guardName} ({plateNo})</Popup>
+                  <Popup>
+                    {guardName} ({plateNo})
+                  </Popup>
                 </Marker>
               )}
               {assignments.map((a) => (
@@ -211,7 +205,13 @@ const openCamera = async (type, house = null) => {
                   ]}
                 >
                   <Popup>
-                    {a.house_no} {a.street_name} ({a.block})
+                    {a.house_no} {a.street_name} ({a.block}) <br />
+                    <button
+                      onClick={() => openCamera("snapHouse", a)}
+                      className="bg-blue-500 text-white rounded px-2 py-1 mt-2"
+                    >
+                      Snap
+                    </button>
                   </Popup>
                 </Marker>
               ))}
@@ -220,7 +220,6 @@ const openCamera = async (type, house = null) => {
         </>
       )}
 
-      {/* CAMERA MODAL */}
       {mode && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
@@ -233,7 +232,6 @@ const openCamera = async (type, house = null) => {
               playsInline
             />
             <canvas ref={canvasRef} width="400" height="300" hidden />
-
             {photoPreview ? (
               <img
                 src={photoPreview}
@@ -248,7 +246,6 @@ const openCamera = async (type, house = null) => {
                 Capture
               </button>
             )}
-
             {photoPreview && (
               <button
                 onClick={handleUpload}
@@ -263,7 +260,6 @@ const openCamera = async (type, house = null) => {
                 )}
               </button>
             )}
-
             <button
               onClick={() => {
                 stopCamera();
