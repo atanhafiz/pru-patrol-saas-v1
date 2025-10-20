@@ -9,7 +9,7 @@ export default function GuardLayout_v11() {
 
   const navItems = [
     { path: "/v11-test/route", icon: <ListChecks size={20} />, label: "Routes" },
-    { path: "/v11-test/selfie", icon: <Camera size={20} />, label: "Selfie" },
+    { path: "/v11-test/selfie", icon: <Camera size={20} />, label: "Attendance" },
     { path: "/v11-test/incident", icon: <FileText size={20} />, label: "Report" },
     { path: "/v11-test/telegram", icon: <Home size={20} />, label: "Test" },
   ];
@@ -56,11 +56,19 @@ export default function GuardLayout_v11() {
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.5 + index * 0.1 }}
+                className="flex flex-col items-center w-1/4 relative"
               >
+                {/* highlight bar atas icon */}
+                <div
+                  className={`absolute top-0 left-0 right-0 h-[3px] rounded-b-full transition-all duration-300 ${
+                    active ? "bg-blue-500" : "bg-transparent"
+                  }`}
+                ></div>
+
                 <Link
                   to={item.path}
                   className={`flex flex-col items-center text-xs font-medium transition ${
-                    active ? "text-accent" : "text-gray-400 hover:text-accent"
+                    active ? "text-blue-500" : "text-gray-400 hover:text-blue-500"
                   }`}
                 >
                   <motion.div
@@ -70,15 +78,13 @@ export default function GuardLayout_v11() {
                   >
                     {item.icon}
                   </motion.div>
-                  {item.label}
-                  {active && (
-                    <motion.div
-                      className="w-1 h-1 bg-accent rounded-full mt-1"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 200 }}
-                    />
-                  )}
+                  <span
+                    className={`text-[11px] ${
+                      active ? "text-blue-500" : "text-gray-500"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
                 </Link>
               </motion.div>
             );
