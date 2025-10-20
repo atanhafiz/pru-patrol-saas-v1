@@ -123,30 +123,40 @@ export default function RouteList() {
     }
   };
 
-  // 📦 Snap Rumah
-  const handleUploadFile = async (file, assignment) => {
-    try {
-      setLoading(true);
-      const ts = Date.now();
-      const coords = guardPos
-        ? `${guardPos[0]},${guardPos[1]}`
-        : "No GPS";
-      const blob = file;
-      const { house_no, street_name, block } = assignment || {};
-      const filePath = `houses/${house_no}_${plateNo}_${ts}.jpg`;
+// 📦 Snap Rumah
+const handleUploadFile = async (file, assignment) => {
+  try {
+    setLoading(true);
+    const ts = Date.now();
+    const coords = guardPos
+      ? `${guardPos[0]},${guardPos[1]}`
+      : "No GPS";
+    const blob = file;
+    const { house_no, street_name, block } = assignment || {};
+    const filePath = `houses/${house_no}_${plateNo}_${ts}.jpg`;
 
-      const photoUrl = await uploadToSupabase(filePath, blob);
-      const caption = `🏠 *${house_no} ${street_name} (${block})*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
-      await sendTelegramPhoto(photoUrl, caption);
-      toast.success("✅ Sent to Telegram!");
-      await fetchAssignments(); // stay on page
-    } catch (err) {
-      console.error("Upload error:", err);
-      toast.error("❌ Upload failed: " + (err.message || err));
-    } finally {
-      setLoading(false);
-    }
-  };
+    // ✅ Upload gambar ke Supabase
+    const photoUrl = await uploadToSupabase(filePath, blob);
+
+    // ✅ Caption lengkap
+    const caption = `🏠 *${house_no} ${street_name} (${block})*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
+
+    // ✅ Hantar ke Telegram
+    await sendTelegramPhoto(photoUrl, caption);
+
+    // ✅ Papar mesej berjaya dan kekal di page Routes
+    toast.success("✅ Sent to Telegram!");
+    await fetchAssignments(); // refresh data tanpa reload
+  } catch (err) {
+    console.error("Upload error:", err);
+    toast.error("❌ Upload failed: " + (err.message || err));
+  } finally {
+    // ✅ Pastikan tak reload / redirect
+    setLoading(false);
+    // window.location.reload(); // ❌ pastikan line ni TIADA
+    // navigate("/"); // ❌ pastikan TIADA juga
+  }
+};
 
   // Group ikut session
   const groupedAssignments = assignments.reduce((acc, a) => {
