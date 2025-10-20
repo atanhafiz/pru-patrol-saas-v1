@@ -127,7 +127,7 @@ export default function SelfieCheckIn_v11() {
       transition={{ duration: 0.6 }}
     >
       <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
-        <Camera className="w-5 h-5 text-accent" /> Selfie Check-In v1.1
+        <Camera className="w-5 h-5 text-accent" /> Attendance
       </h2>
 
       <div className="mb-4">
