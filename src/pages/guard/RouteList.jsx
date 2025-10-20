@@ -1,4 +1,6 @@
-// AHE SmartPatrol Hybrid Stable – RouteList.jsx (Reset Stable: Register Form Visible + Core Functions Only)
+// AHE SmartPatrol Hybrid Stable (Fixed Stay-in-Page Mode)
+// RouteList.jsx – Guard stays on page after snap until selfie OUT
+
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { sendTelegramPhoto } from "../../shared_v11/api/telegram";
@@ -9,9 +11,9 @@ import toast from "react-hot-toast";
 
 export default function RouteList() {
   const [assignments, setAssignments] = useState([]);
-  const [guardName, setGuardName] = useState("");
-  const [plateNo, setPlateNo] = useState("");
-  const [registered, setRegistered] = useState(false);
+  const [guardName, setGuardName] = useState(localStorage.getItem("guardName") || "");
+  const [plateNo, setPlateNo] = useState(localStorage.getItem("plateNo") || "");
+  const [registered, setRegistered] = useState(localStorage.getItem("registered") === "true");
   const [guardPos, setGuardPos] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +23,17 @@ export default function RouteList() {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Fetch assignments (no filter)
+  // 🛰️ GPS & Assignments
+  useEffect(() => {
+    fetchAssignments();
+    const watch = navigator.geolocation.watchPosition(
+      (pos) => setGuardPos([pos.coords.latitude, pos.coords.longitude]),
+      (err) => console.error("GPS error:", err),
+      { enableHighAccuracy: true }
+    );
+    return () => navigator.geolocation.clearWatch(watch);
+  }, []);
+
   const fetchAssignments = async () => {
     try {
       const { data, error } = await supabase
@@ -36,16 +48,7 @@ export default function RouteList() {
     }
   };
 
-  useEffect(() => {
-    fetchAssignments();
-    const watch = navigator.geolocation.watchPosition(
-      (pos) => setGuardPos([pos.coords.latitude, pos.coords.longitude]),
-      (err) => console.error("GPS error:", err),
-      { enableHighAccuracy: true }
-    );
-    return () => navigator.geolocation.clearWatch(watch);
-  }, []);
-
+  // 📤 Upload ke Supabase
   const uploadToSupabase = async (filePath, blob) => {
     const { error: upErr } = await supabase.storage
       .from("patrol-photos")
@@ -89,6 +92,7 @@ export default function RouteList() {
       ctx.drawImage(videoRef.current, 0, 0, 400, 300);
       const dataUrl = canvas.toDataURL("image/jpeg");
 
+      // Stop kamera lepas capture
       const stream = videoRef.current.streamRef;
       if (stream) stream.getTracks().forEach((t) => t.stop());
       setShowCamera(false);
@@ -97,24 +101,25 @@ export default function RouteList() {
       const ts = Date.now();
       const filePath = `selfies/${guardName}_${plateNo}_${selfieType}_${ts}.jpg`;
       const blob = await fetch(dataUrl).then((r) => r.blob());
-      const { error: upErr } = await supabase.storage
-        .from("patrol-photos")
-        .upload(filePath, blob, { upsert: true });
-      if (upErr) throw upErr;
-      const { data } = await supabase.storage
-        .from("patrol-photos")
-        .getPublicUrl(filePath);
-      const photoUrl = data.publicUrl;
+      const photoUrl = await uploadToSupabase(filePath, blob);
 
-      const coords = guardPos
-        ? `${guardPos[0]},${guardPos[1]}`
-        : "No GPS";
+      const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
       const caption =
         selfieType === "selfieIn"
           ? `🚨 *Guard On Duty*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`
           : `✅ *Patrol Ended*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
       await sendTelegramPhoto(photoUrl, caption);
+
       toast.success("✅ Selfie sent!");
+      if (selfieType === "selfieOut") {
+        // Bila OUT → clear session
+        localStorage.removeItem("guardName");
+        localStorage.removeItem("plateNo");
+        localStorage.removeItem("registered");
+        setRegistered(false);
+        setGuardName("");
+        setPlateNo("");
+      }
     } catch (err) {
       console.error("Selfie error:", err);
       toast.error("Failed to send selfie.");
@@ -123,42 +128,30 @@ export default function RouteList() {
     }
   };
 
-// 📦 Snap Rumah
-const handleUploadFile = async (file, assignment) => {
-  try {
-    setLoading(true);
-    const ts = Date.now();
-    const coords = guardPos
-      ? `${guardPos[0]},${guardPos[1]}`
-      : "No GPS";
-    const blob = file;
-    const { house_no, street_name, block } = assignment || {};
-    const filePath = `houses/${house_no}_${plateNo}_${ts}.jpg`;
+  // 🏠 Snap Rumah (Stay-in-Page)
+  const handleUploadFile = async (file, assignment) => {
+    try {
+      setLoading(true);
+      const ts = Date.now();
+      const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
+      const blob = file;
+      const { house_no, street_name, block } = assignment || {};
+      const filePath = `houses/${house_no}_${plateNo}_${ts}.jpg`;
+      const photoUrl = await uploadToSupabase(filePath, blob);
 
-    // ✅ Upload gambar ke Supabase
-    const photoUrl = await uploadToSupabase(filePath, blob);
+      const caption = `🏠 *${house_no} ${street_name} (${block})*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
+      await sendTelegramPhoto(photoUrl, caption);
 
-    // ✅ Caption lengkap
-    const caption = `🏠 *${house_no} ${street_name} (${block})*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
+      toast.success("✅ Sent to Telegram!");
+      await fetchAssignments(); // refresh data tanpa reload
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("❌ Upload failed: " + (err.message || err));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // ✅ Hantar ke Telegram
-    await sendTelegramPhoto(photoUrl, caption);
-
-    // ✅ Papar mesej berjaya dan kekal di page Routes
-    toast.success("✅ Sent to Telegram!");
-    await fetchAssignments(); // refresh data tanpa reload
-  } catch (err) {
-    console.error("Upload error:", err);
-    toast.error("❌ Upload failed: " + (err.message || err));
-  } finally {
-    // ✅ Pastikan tak reload / redirect
-    setLoading(false);
-    // window.location.reload(); // ❌ pastikan line ni TIADA
-    // navigate("/"); // ❌ pastikan TIADA juga
-  }
-};
-
-  // Group ikut session
   const groupedAssignments = assignments.reduce((acc, a) => {
     const session = a.session_no || 0;
     if (!acc[session]) acc[session] = [];
@@ -190,6 +183,9 @@ const handleUploadFile = async (file, assignment) => {
             onClick={() => {
               if (!guardName) return toast.error("Please enter your name");
               setRegistered(true);
+              localStorage.setItem("guardName", guardName);
+              localStorage.setItem("plateNo", plateNo);
+              localStorage.setItem("registered", "true");
               toast.success("✅ Registered");
             }}
             className="bg-accent text-white px-4 py-2 rounded w-full"
@@ -217,7 +213,7 @@ const handleUploadFile = async (file, assignment) => {
             </button>
           </div>
 
-          {/* Map */}
+          {/* Map Section */}
           <div className="h-[360px] w-full rounded-xl overflow-hidden shadow relative z-0">
             <MapContainer
               center={guardPos || [5.65, 100.5]}
@@ -247,7 +243,6 @@ const handleUploadFile = async (file, assignment) => {
                         accept="image/*"
                         capture="environment"
                         hidden
-                        ref={fileInputRef}
                         onChange={(e) => {
                           const file = e.target.files[0];
                           if (file) handleUploadFile(file, a);
@@ -261,7 +256,7 @@ const handleUploadFile = async (file, assignment) => {
             </MapContainer>
           </div>
 
-          {/* Grouped by Session */}
+          {/* List by Session */}
           <div className="bg-white mt-3 p-3 rounded-lg shadow text-sm">
             <h3 className="font-semibold mb-2">🏠 Assigned Houses</h3>
             {Object.keys(groupedAssignments).map((session) => (
@@ -284,7 +279,6 @@ const handleUploadFile = async (file, assignment) => {
                           accept="image/*"
                           capture="environment"
                           hidden
-                          ref={fileInputRef}
                           onChange={(e) => {
                             const file = e.target.files[0];
                             if (file) handleUploadFile(file, a);
@@ -323,9 +317,7 @@ const handleUploadFile = async (file, assignment) => {
             <button
               onClick={() => {
                 if (videoRef.current?.streamRef) {
-                  videoRef.current.streamRef
-                    .getTracks()
-                    .forEach((t) => t.stop());
+                  videoRef.current.streamRef.getTracks().forEach((t) => t.stop());
                 }
                 setShowCamera(false);
               }}

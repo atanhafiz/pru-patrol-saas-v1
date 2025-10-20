@@ -117,12 +117,7 @@ export default function RouteAssignment() {
 
       {/* Form Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-5">
-        <input
-          placeholder="(Optional) Guard Name"
-          value={guardName}
-          onChange={(e) => setGuardName(e.target.value)}
-          className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent"
-        />
+       
         <select
           value={selectedHouse}
           onChange={(e) => handleSelectHouse(e.target.value)}
