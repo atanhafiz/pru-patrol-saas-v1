@@ -8,7 +8,6 @@ import AttendanceHistoryMap from "../pages/admin/AttendanceHistoryMap";
 import AdminIncident from "../pages/admin/AdminIncident";
 import GuardDashboard from "../pages/guard/Dashboard";
 import RouteList from "../pages/guard/RouteList";
-import PatrolTimeline from "../pages/guard/PatrolTimeline";
 import SelfieCheckIn from "../pages/guard/SelfieCheckIn";
 import IncidentForm from "../pages/guard/IncidentForm";
 import Login from "../pages/Login";
@@ -50,7 +49,6 @@ export default function AppRouter() {
           <Route index element={<GuardDashboard />} />
           <Route path="dashboard" element={<GuardDashboard />} />
           <Route path="route" element={<RouteList />} />
-          <Route path="timeline" element={<PatrolTimeline />} />
           <Route path="selfie" element={<SelfieCheckIn />} />
           <Route path="report" element={<IncidentForm />} />
           <Route path="*" element={<Navigate to="/guard/dashboard" />} />

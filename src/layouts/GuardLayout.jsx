@@ -11,7 +11,6 @@ export default function GuardLayout() {
     { path: "/guard/route", icon: <ListChecks size={20} />, label: "Routes" },
     { path: "/guard/selfie", icon: <Camera size={20} />, label: "Attendance" },
     { path: "/guard/report", icon: <FileText size={20} />, label: "Report" },
-    { path: "/guard/timeline", icon: <Clock3 size={20} />, label: "Timeline" },
   ];
 
   return (
