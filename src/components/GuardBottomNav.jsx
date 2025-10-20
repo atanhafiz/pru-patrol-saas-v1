@@ -5,26 +5,42 @@ export default function GuardBottomNav() {
   const location = useLocation();
 
   const navItems = [
-    { label: "Selfie", icon: Camera, path: "/guard/route" },
+    { label: "Attendance", icon: Camera, path: "/guard/selfie" },
     { label: "Report", icon: FileText, path: "/guard/report" },
     { label: "Timeline", icon: Clock, path: "/guard/timeline" },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-2 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-2 z-50 shadow-sm">
       {navItems.map((item) => {
         const Icon = item.icon;
         const active = location.pathname === item.path;
+
         return (
           <Link
             key={item.path}
             to={item.path}
-            className={`flex flex-col items-center text-xs ${
-              active ? "text-blue-500" : "text-gray-500"
-            }`}
+            className="flex flex-col items-center text-xs relative w-1/3"
           >
-            <Icon className={`w-5 h-5 ${active ? "stroke-blue-500" : "stroke-gray-400"}`} />
-            {item.label}
+            {/* highlight bar atas icon */}
+            <div
+              className={`absolute top-0 left-0 right-0 h-[3px] rounded-b-full transition-all duration-300 ${
+                active ? "bg-blue-500" : "bg-transparent"
+              }`}
+            ></div>
+
+            <Icon
+              className={`w-5 h-5 mb-0.5 transition-all ${
+                active ? "stroke-blue-500 scale-110" : "stroke-gray-400"
+              }`}
+            />
+            <span
+              className={`text-[11px] font-medium ${
+                active ? "text-blue-500" : "text-gray-500"
+              }`}
+            >
+              {item.label}
+            </span>
           </Link>
         );
       })}
