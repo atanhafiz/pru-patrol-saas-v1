@@ -1,15 +1,14 @@
-// AHE SmartPatrol Hybrid Stable – RouteList.jsx (Final v4 – Persistent Guard Info + Done Indicator)
+// AHE SmartPatrol Hybrid Stable – RouteList.jsx (Stable rollback before Done feature)
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { sendTelegramPhoto } from "../../shared_v11/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import { Camera, Loader2, CheckCircle } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import GuardBottomNav from "../../components/GuardBottomNav";
 import toast from "react-hot-toast";
 
 export default function RouteList() {
   const [assignments, setAssignments] = useState([]);
-  const [completed, setCompleted] = useState([]); // ✅ Track done houses
   const [guardName, setGuardName] = useState("");
   const [plateNo, setPlateNo] = useState("");
   const [registered, setRegistered] = useState(false);
@@ -22,7 +21,7 @@ export default function RouteList() {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // ✅ Auto load guard info (persist)
+  // ✅ Persist guard info
   useEffect(() => {
     const savedName = localStorage.getItem("guardName");
     const savedPlate = localStorage.getItem("plateNo");
@@ -46,7 +45,7 @@ export default function RouteList() {
     }
   };
 
-  // ✅ Auto fetch once
+  // Auto fetch
   useEffect(() => {
     fetchAssignments();
     const watch = navigator.geolocation.watchPosition(
@@ -57,7 +56,6 @@ export default function RouteList() {
     return () => navigator.geolocation.clearWatch(watch);
   }, []);
 
-  // Upload helper
   const uploadToSupabase = async (filePath, blob) => {
     const { error: upErr } = await supabase.storage
       .from("patrol-photos")
@@ -132,7 +130,7 @@ export default function RouteList() {
     }
   };
 
-  // 📦 Upload Snap Rumah + Mark Done
+  // 📦 Snap Rumah
   const handleUploadFile = async (file, assignment) => {
     try {
       setLoading(true);
@@ -145,11 +143,7 @@ export default function RouteList() {
       const photoUrl = await uploadToSupabase(filePath, blob);
       const caption = `🏠 *${house_no} ${street_name} (${block})*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
       await sendTelegramPhoto(photoUrl, caption);
-
-      // ✅ Mark this house as done
-      setCompleted((prev) => [...prev, assignment.id]);
-
-      toast.success(`✅ ${house_no} snapped & sent!`);
+      toast.success("✅ Sent to Telegram!");
       await fetchAssignments();
     } catch (err) {
       console.error("Upload error:", err);
@@ -159,7 +153,7 @@ export default function RouteList() {
     }
   };
 
-  // Group assignments ikut session
+  // Group ikut session
   const groupedAssignments = assignments.reduce((acc, a) => {
     const session = a.session_no || 0;
     if (!acc[session]) acc[session] = [];
@@ -239,24 +233,20 @@ export default function RouteList() {
                   <Popup>
                     {a.house_no} {a.street_name} ({a.block}) — Session {a.session_no}
                     <br />
-                    {completed.includes(a.id) ? (
-                      <span className="text-green-600 text-xs font-semibold">✅ Done</span>
-                    ) : (
-                      <label className="bg-blue-500 text-white rounded px-2 py-1 mt-2 cursor-pointer text-xs">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          hidden
-                          ref={fileInputRef}
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) handleUploadFile(file, a);
-                          }}
-                        />
-                        📸 Snap
-                      </label>
-                    )}
+                    <label className="bg-blue-500 text-white rounded px-2 py-1 mt-2 cursor-pointer text-xs">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        hidden
+                        ref={fileInputRef}
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) handleUploadFile(file, a);
+                        }}
+                      />
+                      📸 Snap
+                    </label>
                   </Popup>
                 </Marker>
               ))}
@@ -278,26 +268,20 @@ export default function RouteList() {
                       <span>
                         {a.house_no} {a.street_name} ({a.block})
                       </span>
-                      {completed.includes(a.id) ? (
-                        <span className="text-green-600 text-xs font-semibold flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" /> Done
-                        </span>
-                      ) : (
-                        <label className="bg-blue-500 text-white rounded px-2 py-1 text-xs cursor-pointer">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            hidden
-                            ref={fileInputRef}
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) handleUploadFile(file, a);
-                            }}
-                          />
-                          Snap
-                        </label>
-                      )}
+                      <label className="bg-blue-500 text-white rounded px-2 py-1 text-xs cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          hidden
+                          ref={fileInputRef}
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) handleUploadFile(file, a);
+                          }}
+                        />
+                        Snap
+                      </label>
                     </li>
                   ))}
                 </ul>
