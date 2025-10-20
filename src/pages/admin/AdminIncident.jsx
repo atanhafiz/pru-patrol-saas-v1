@@ -24,6 +24,7 @@ export default function AdminIncident() {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   const fetchIncidents = async () => {
     setLoading(true);
@@ -83,7 +84,7 @@ export default function AdminIncident() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
         >
           <AnimatePresence mode="popLayout">
-            {incidents.map((i) => (
+            {incidents.slice(0, visibleCount).map((i) => (
               <motion.div
                 key={i.id}
                 variants={cardVariants}
@@ -135,6 +136,18 @@ export default function AdminIncident() {
             ))}
           </AnimatePresence>
         </motion.div>
+      )}
+
+      {/* Load More Button */}
+      {visibleCount < incidents.length && (
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={() => setVisibleCount((prev) => prev + 20)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow transition"
+          >
+            Load More
+          </button>
+        </div>
       )}
 
       {/* Confirmation Modal */}

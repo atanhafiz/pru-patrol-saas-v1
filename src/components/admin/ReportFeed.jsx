@@ -23,6 +23,7 @@ const cardVariants = {
 export default function ReportFeed() {
   const [reports, setReports] = useState([]);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   const fetchReports = async () => {
     const { data, error } = await supabase
@@ -119,7 +120,7 @@ export default function ReportFeed() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           <AnimatePresence mode="popLayout">
-            {reports.map((r, idx) => (
+            {reports.slice(0, visibleCount).map((r, idx) => (
               <motion.div
                 key={r.id}
                 variants={cardVariants}
@@ -196,6 +197,18 @@ export default function ReportFeed() {
             ))}
           </AnimatePresence>
         </motion.div>
+      )}
+
+      {/* Load More Button */}
+      {visibleCount < reports.length && (
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={() => setVisibleCount((prev) => prev + 20)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow transition"
+          >
+            Load More
+          </button>
+        </div>
       )}
     </motion.div>
   );
