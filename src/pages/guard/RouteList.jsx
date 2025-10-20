@@ -1,4 +1,4 @@
-// AHE SmartPatrol Hybrid Stable – RouteList.jsx (Fix: Register form muncul + stay on page selepas Snap)
+// AHE SmartPatrol Hybrid Stable – RouteList.jsx (Reset Stable: Register Form Visible + Core Functions Only)
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { sendTelegramPhoto } from "../../shared_v11/api/telegram";
@@ -21,24 +21,7 @@ export default function RouteList() {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // ✅ Auto load guard info (dan buka form bila kosong)
-  useEffect(() => {
-    const savedName = localStorage.getItem("guardName");
-    const savedPlate = localStorage.getItem("plateNo");
-
-    if (!savedName || !savedPlate || savedName.trim() === "" || savedPlate.trim() === "") {
-      // Tiada data — buka form register
-      setRegistered(false);
-      setGuardName("");
-      setPlateNo("");
-    } else {
-      setGuardName(savedName);
-      setPlateNo(savedPlate);
-      setRegistered(true);
-    }
-  }, []);
-
-  // ✅ Fetch semua assignment
+  // Fetch assignments (no filter)
   const fetchAssignments = async () => {
     try {
       const { data, error } = await supabase
@@ -79,7 +62,8 @@ export default function RouteList() {
     try {
       setSelfieType(type);
       setShowCamera(true);
-      const facing = type === "selfieIn" || type === "selfieOut" ? "user" : "environment";
+      const facing =
+        type === "selfieIn" || type === "selfieOut" ? "user" : "environment";
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: facing } },
         audio: false,
@@ -122,7 +106,9 @@ export default function RouteList() {
         .getPublicUrl(filePath);
       const photoUrl = data.publicUrl;
 
-      const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
+      const coords = guardPos
+        ? `${guardPos[0]},${guardPos[1]}`
+        : "No GPS";
       const caption =
         selfieType === "selfieIn"
           ? `🚨 *Guard On Duty*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`
@@ -142,7 +128,9 @@ export default function RouteList() {
     try {
       setLoading(true);
       const ts = Date.now();
-      const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
+      const coords = guardPos
+        ? `${guardPos[0]},${guardPos[1]}`
+        : "No GPS";
       const blob = file;
       const { house_no, street_name, block } = assignment || {};
       const filePath = `houses/${house_no}_${plateNo}_${ts}.jpg`;
@@ -150,14 +138,12 @@ export default function RouteList() {
       const photoUrl = await uploadToSupabase(filePath, blob);
       const caption = `🏠 *${house_no} ${street_name} (${block})*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
       await sendTelegramPhoto(photoUrl, caption);
-
       toast.success("✅ Sent to Telegram!");
-      // ✅ Stay on same page - only refresh assignment data
-      await fetchAssignments();
-      setLoading(false);
+      await fetchAssignments(); // stay on page
     } catch (err) {
       console.error("Upload error:", err);
       toast.error("❌ Upload failed: " + (err.message || err));
+    } finally {
       setLoading(false);
     }
   };
@@ -174,8 +160,9 @@ export default function RouteList() {
     <div className="p-5 space-y-5 pb-16">
       <h1 className="text-2xl font-bold text-primary">Routes</h1>
 
-      {!registered ? (
-        <div className="bg-white p-4 rounded-xl shadow max-w-md">
+      {/* REGISTER FORM */}
+      {!registered && (
+        <div className="bg-white p-4 rounded-xl shadow max-w-md mb-4">
           <h3 className="font-semibold mb-2">Register Guard</h3>
           <input
             placeholder="Guard Name"
@@ -192,18 +179,17 @@ export default function RouteList() {
           <button
             onClick={() => {
               if (!guardName) return toast.error("Please enter your name");
-              localStorage.setItem("guardName", guardName);
-              localStorage.setItem("plateNo", plateNo);
               setRegistered(true);
               toast.success("✅ Registered");
-              fetchAssignments();
             }}
             className="bg-accent text-white px-4 py-2 rounded w-full"
           >
             Save
           </button>
         </div>
-      ) : (
+      )}
+
+      {registered && (
         <>
           {/* Selfie Buttons */}
           <div className="flex gap-2 mb-2">
@@ -234,13 +220,16 @@ export default function RouteList() {
               />
               {guardPos && (
                 <Marker position={guardPos}>
-                  <Popup>{guardName} ({plateNo})</Popup>
+                  <Popup>
+                    {guardName} ({plateNo})
+                  </Popup>
                 </Marker>
               )}
               {assignments.map((a) => (
                 <Marker key={a.id} position={[a.lat || 0, a.lng || 0]}>
                   <Popup>
-                    {a.house_no} {a.street_name} ({a.block}) — Session {a.session_no}
+                    {a.house_no} {a.street_name} ({a.block}) — Session{" "}
+                    {a.session_no}
                     <br />
                     <label className="bg-blue-500 text-white rounded px-2 py-1 mt-2 cursor-pointer text-xs">
                       <input
@@ -267,7 +256,9 @@ export default function RouteList() {
             <h3 className="font-semibold mb-2">🏠 Assigned Houses</h3>
             {Object.keys(groupedAssignments).map((session) => (
               <div key={session} className="mb-3">
-                <h4 className="font-semibold text-accent mb-1">Session {session}</h4>
+                <h4 className="font-semibold text-accent mb-1">
+                  Session {session}
+                </h4>
                 <ul className="space-y-1">
                   {groupedAssignments[session].map((a) => (
                     <li
@@ -304,15 +295,27 @@ export default function RouteList() {
       {showCamera && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
-            <video ref={videoRef} width="400" height="300" autoPlay playsInline className="rounded-md" />
+            <video
+              ref={videoRef}
+              width="400"
+              height="300"
+              autoPlay
+              playsInline
+              className="rounded-md"
+            />
             <canvas ref={canvasRef} width="400" height="300" hidden />
-            <button onClick={captureSelfie} className="w-full bg-accent text-white py-2 rounded-lg mt-3">
+            <button
+              onClick={captureSelfie}
+              className="w-full bg-accent text-white py-2 rounded-lg mt-3"
+            >
               Capture
             </button>
             <button
               onClick={() => {
                 if (videoRef.current?.streamRef) {
-                  videoRef.current.streamRef.getTracks().forEach((t) => t.stop());
+                  videoRef.current.streamRef
+                    .getTracks()
+                    .forEach((t) => t.stop());
                 }
                 setShowCamera(false);
               }}
