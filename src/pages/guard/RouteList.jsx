@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
-import { sendTelegramPhoto } from "../../shared_v11/api/telegram";
+import { sendTelegramPhoto } from "../../shared/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import { Camera, Loader2 } from "lucide-react";
 import GuardBottomNav from "../../components/GuardBottomNav";

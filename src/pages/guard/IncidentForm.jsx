@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabaseClient";
-import { sendTelegramPhoto } from "../../shared_v11/api/telegram";
+import { sendTelegramPhoto } from "../../shared/api/telegram";
 import { Upload, Image, Send, Camera } from "lucide-react";
 import { logEvent } from "../../lib/logEvent";
 
