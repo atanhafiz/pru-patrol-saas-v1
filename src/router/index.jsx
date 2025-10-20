@@ -30,18 +30,18 @@ export default function AppRouter() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* Admin */}
-      {user && profile?.role === "admin" && (
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="map" element={<AdminMap />} />
-          <Route path="attendance-history" element={<AttendanceHistoryMap />} />
-          <Route path="attendance-map" element={<AttendanceHistoryMap />} />
-          <Route path="incidents" element={<AdminIncident />} />
-          <Route path="*" element={<Navigate to="/admin/dashboard" />} />
-        </Route>
-      )}
+{/* Admin (guna layout clean dari dalam Dashboard.jsx) */}
+{user && profile?.role === "admin" && (
+  <>
+    <Route path="/admin" element={<AdminDashboard />} />
+    <Route path="/admin/dashboard" element={<AdminDashboard />} />
+    <Route path="/admin/map" element={<AdminMap />} />
+    <Route path="/admin/attendance-history" element={<AttendanceHistoryMap />} />
+    <Route path="/admin/attendance-map" element={<AttendanceHistoryMap />} />
+    <Route path="/admin/incidents" element={<AdminIncident />} />
+    <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
+  </>
+)}
 
       {/* Guard */}
       {user && profile?.role === "guard" && (

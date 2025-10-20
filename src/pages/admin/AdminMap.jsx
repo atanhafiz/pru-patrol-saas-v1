@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from "react-leaflet";
+import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function AdminMap() {
@@ -93,7 +94,7 @@ export default function AdminMap() {
 
   return (
     <div className="h-screen w-full relative">
-      <div className="absolute top-4 left-4 z-[1000] bg-white p-4 rounded-lg shadow-lg">
+      <div className="absolute top-4 left-16 z-[1000] bg-white p-4 rounded-lg shadow-lg">
         <h1 className="text-xl font-bold text-primary mb-2">Real-time Guard Tracking</h1>
         <p className="text-sm text-gray-600">
           {selectedGuard ? `Filtered: ${selectedGuard}` : `${Object.keys(groupedTracks).length} guard(s) tracked`}
@@ -119,23 +120,15 @@ export default function AdminMap() {
         </div>
       </div>
 
-      {/* Guard Filter Dropdown */}
-      <div className="absolute top-4 right-4 z-[1000] bg-white p-4 rounded-lg shadow-lg">
-        <div className="flex items-center gap-3">
-          <label className="font-semibold text-gray-700">Filter Guard:</label>
-          <select
-            value={selectedGuard}
-            onChange={(e) => setSelectedGuard(e.target.value)}
-            className="border px-2 py-1 rounded"
-            disabled={guards.length === 0}
-          >
-            <option value="">All Guards</option>
-            {guards.map((guard, index) => (
-              <option key={index} value={guard}>{guard}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+      {/* Back Button */}
+      <motion.button
+        onClick={() => window.history.back()}
+        className="absolute top-3 right-3 sm:top-4 sm:right-4 z-[1000] bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg transition text-sm sm:text-base"
+        whileHover={{ x: -4, scale: 1.03 }}
+        transition={{ type: "spring", stiffness: 300, damping: 15 }}
+      >
+        ← Back
+      </motion.button>
 
       <MapContainer
         center={center}
