@@ -26,7 +26,7 @@ export default function RouteList() {
     const savedName = localStorage.getItem("guardName");
     const savedPlate = localStorage.getItem("plateNo");
 
-    if (!savedName || !savedPlate) {
+    if (!savedName || !savedPlate || savedName.trim() === "" || savedPlate.trim() === "") {
       // Tiada data — buka form register
       setRegistered(false);
       setGuardName("");
@@ -152,7 +152,7 @@ export default function RouteList() {
       await sendTelegramPhoto(photoUrl, caption);
 
       toast.success("✅ Sent to Telegram!");
-      // ❌ Jangan reload page — kekal kat sini
+      // ✅ Stay on same page - only refresh assignment data
       await fetchAssignments();
       setLoading(false);
     } catch (err) {
