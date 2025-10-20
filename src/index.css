@@ -1,3 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* External library import selepas Tailwind */
 @import "leaflet/dist/leaflet.css";
 
 html, body, #root {
