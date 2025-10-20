@@ -1,4 +1,4 @@
-// AHE SmartPatrol Hybrid Stable (Fixed Stay-in-Page Mode)
+// AHE SmartPatrol Hybrid Stable (Fixed Stay-in-Page Mode + Snap→Done)
 // RouteList.jsx – Guard stays on page after snap until selfie OUT
 
 import { useEffect, useState, useRef } from "react";
@@ -21,7 +21,9 @@ export default function RouteList() {
   const [selfieType, setSelfieType] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
-  const fileInputRef = useRef(null);
+
+  // ✅ New state to mark house as done
+  const [doneHouseIds, setDoneHouseIds] = useState([]);
 
   // 🛰️ GPS & Assignments
   useEffect(() => {
@@ -92,7 +94,6 @@ export default function RouteList() {
       ctx.drawImage(videoRef.current, 0, 0, 400, 300);
       const dataUrl = canvas.toDataURL("image/jpeg");
 
-      // Stop kamera lepas capture
       const stream = videoRef.current.streamRef;
       if (stream) stream.getTracks().forEach((t) => t.stop());
       setShowCamera(false);
@@ -112,7 +113,6 @@ export default function RouteList() {
 
       toast.success("✅ Selfie sent!");
       if (selfieType === "selfieOut") {
-        // Bila OUT → clear session
         localStorage.removeItem("guardName");
         localStorage.removeItem("plateNo");
         localStorage.removeItem("registered");
@@ -128,14 +128,14 @@ export default function RouteList() {
     }
   };
 
-  // 🏠 Snap Rumah (Stay-in-Page)
+  // 🏠 Snap Rumah (Stay-in-Page + mark Done)
   const handleUploadFile = async (file, assignment) => {
     try {
       setLoading(true);
       const ts = Date.now();
       const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
       const blob = file;
-      const { house_no, street_name, block } = assignment || {};
+      const { id, house_no, street_name, block } = assignment || {};
       const filePath = `houses/${house_no}_${plateNo}_${ts}.jpg`;
       const photoUrl = await uploadToSupabase(filePath, blob);
 
@@ -143,7 +143,11 @@ export default function RouteList() {
       await sendTelegramPhoto(photoUrl, caption);
 
       toast.success("✅ Sent to Telegram!");
-      await fetchAssignments(); // refresh data tanpa reload
+
+      // ✅ Mark house as done (replace Snap with Done)
+      setDoneHouseIds((prev) => [...prev, id]);
+
+      await fetchAssignments();
     } catch (err) {
       console.error("Upload error:", err);
       toast.error("❌ Upload failed: " + (err.message || err));
@@ -234,22 +238,30 @@ export default function RouteList() {
               {assignments.map((a) => (
                 <Marker key={a.id} position={[a.lat || 0, a.lng || 0]}>
                   <Popup>
-                    {a.house_no} {a.street_name} ({a.block}) — Session{" "}
-                    {a.session_no}
+                    {a.house_no} {a.street_name} ({a.block}) — Session {a.session_no}
                     <br />
-                    <label className="bg-blue-500 text-white rounded px-2 py-1 mt-2 cursor-pointer text-xs">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        hidden
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) handleUploadFile(file, a);
-                        }}
-                      />
-                      📸 Snap
-                    </label>
+                    {doneHouseIds.includes(a.id) ? (
+                      <button
+                        disabled
+                        className="bg-green-500 text-white rounded px-2 py-1 mt-2 text-xs cursor-default"
+                      >
+                        ✅ Done
+                      </button>
+                    ) : (
+                      <label className="bg-blue-500 text-white rounded px-2 py-1 mt-2 cursor-pointer text-xs">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          hidden
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) handleUploadFile(file, a);
+                          }}
+                        />
+                        📸 Snap
+                      </label>
+                    )}
                   </Popup>
                 </Marker>
               ))}
@@ -273,19 +285,28 @@ export default function RouteList() {
                       <span>
                         {a.house_no} {a.street_name} ({a.block})
                       </span>
-                      <label className="bg-blue-500 text-white rounded px-2 py-1 text-xs cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          hidden
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) handleUploadFile(file, a);
-                          }}
-                        />
-                        Snap
-                      </label>
+                      {doneHouseIds.includes(a.id) ? (
+                        <button
+                          disabled
+                          className="bg-green-500 text-white rounded px-2 py-1 text-xs cursor-default"
+                        >
+                          ✅ Done
+                        </button>
+                      ) : (
+                        <label className="bg-blue-500 text-white rounded px-2 py-1 text-xs cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            hidden
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) handleUploadFile(file, a);
+                            }}
+                          />
+                          Snap
+                        </label>
+                      )}
                     </li>
                   ))}
                 </ul>
