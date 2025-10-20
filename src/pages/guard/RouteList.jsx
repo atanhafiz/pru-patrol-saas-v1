@@ -1,4 +1,4 @@
-// AHE SmartPatrol Hybrid Stable – RouteList.jsx (Stable rollback before Done feature)
+// AHE SmartPatrol Hybrid Stable – RouteList.jsx (Fix: Register form muncul + stay on page selepas Snap)
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { sendTelegramPhoto } from "../../shared_v11/api/telegram";
@@ -21,16 +21,24 @@ export default function RouteList() {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // ✅ Persist guard info
+  // ✅ Auto load guard info (dan buka form bila kosong)
   useEffect(() => {
     const savedName = localStorage.getItem("guardName");
     const savedPlate = localStorage.getItem("plateNo");
-    if (savedName) setGuardName(savedName);
-    if (savedPlate) setPlateNo(savedPlate);
-    if (savedName) setRegistered(true);
+
+    if (!savedName || !savedPlate) {
+      // Tiada data — buka form register
+      setRegistered(false);
+      setGuardName("");
+      setPlateNo("");
+    } else {
+      setGuardName(savedName);
+      setPlateNo(savedPlate);
+      setRegistered(true);
+    }
   }, []);
 
-  // ✅ Fetch all assignments
+  // ✅ Fetch semua assignment
   const fetchAssignments = async () => {
     try {
       const { data, error } = await supabase
@@ -40,12 +48,11 @@ export default function RouteList() {
       if (error) throw error;
       setAssignments(data || []);
     } catch (err) {
-      console.error("❌ Fetch assignment error:", err);
+      console.error("Fetch assignment error:", err);
       toast.error("Failed to load assignments");
     }
   };
 
-  // Auto fetch
   useEffect(() => {
     fetchAssignments();
     const watch = navigator.geolocation.watchPosition(
@@ -143,12 +150,14 @@ export default function RouteList() {
       const photoUrl = await uploadToSupabase(filePath, blob);
       const caption = `🏠 *${house_no} ${street_name} (${block})*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
       await sendTelegramPhoto(photoUrl, caption);
+
       toast.success("✅ Sent to Telegram!");
+      // ❌ Jangan reload page — kekal kat sini
       await fetchAssignments();
+      setLoading(false);
     } catch (err) {
       console.error("Upload error:", err);
       toast.error("❌ Upload failed: " + (err.message || err));
-    } finally {
       setLoading(false);
     }
   };
