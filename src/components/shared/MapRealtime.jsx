@@ -14,8 +14,8 @@ const guardIcon = new L.Icon({
 
 export default function MapRealtime() {
   const [guards, setGuards] = useState([
-    { id: 1, name: "Amir", lat: 5.648, lng: 100.486, status: "Patrolling" },
-    { id: 2, name: "Danial", lat: 5.646, lng: 100.482, status: "On Standby" },
+    { id: 1, name: "", lat: 5.648, lng: 100.486, status: "Patrolling" },
+    { id: 2, name: "", lat: 5.646, lng: 100.482, status: "On Standby" },
   ]);
 
   useEffect(() => {

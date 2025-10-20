@@ -36,8 +36,8 @@ export default function Login() {
       // Set localStorage for guards
       if (prof?.role === "guard") {
         localStorage.setItem("guardName", prof.full_name || "Guard");
-        localStorage.setItem("plateNo", "Unknown");
-        console.log("✅ localStorage updated:", prof.full_name || "Guard", "Unknown");
+        localStorage.setItem("plateNo", "");
+        console.log("✅ localStorage updated:", prof.full_name || "Guard", "");
       }
 
       setMsg("✅ Login successful! Redirecting...");

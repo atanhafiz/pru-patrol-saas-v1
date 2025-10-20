@@ -81,7 +81,7 @@ export default function IncidentForm_v11() {
       blob = await res.blob();
     } else blob = imageData;
 
-    const filePath = `incident/${guardName || "unknown"}_${Date.now()}.jpg`;
+    const filePath = `incident/${guardName || ""}_${Date.now()}.jpg`;
     const { data, error } = await supabase.storage
       .from("incident-photos")
       .upload(filePath, blob, { upsert: true, contentType: "image/jpeg" });
@@ -159,7 +159,7 @@ ${googleLink}
         transition={{ duration: 0.6 }}
       >
         <h2 className="text-2xl font-semibold text-primary mb-4 flex items-center gap-2">
-          <Upload className="w-5 h-5 text-accent" /> Submit Incident Report v1.1
+          <Upload className="w-5 h-5 text-accent" /> Incident Report
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4" disabled={loading}>
