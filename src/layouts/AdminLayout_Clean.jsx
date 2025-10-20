@@ -2,10 +2,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Bell, Settings, LogOut, Map, AlertTriangle, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import AdminAlertCenter from "../components/admin/AdminAlertCenter";
 import { supabase } from "../lib/supabaseClient";
 
 export default function AdminLayout_Clean({ children }) {
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertCount, setAlertCount] = useState(3); // sementara dummy
@@ -99,7 +101,14 @@ export default function AdminLayout_Clean({ children }) {
         </div>
 
         <div className="flex items-center gap-3">
-  <button className="flex items-center gap-1 bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition">
+  <button
+    onClick={async () => {
+      await supabase.auth.signOut();
+      localStorage.clear();
+      navigate("/login", { replace: true });
+    }}
+    className="flex items-center gap-1 bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition"
+  >
     <LogOut className="w-4 h-4" />
     <span className="text-sm">Logout</span>
   </button>

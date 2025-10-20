@@ -1,7 +1,24 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabaseClient";
 import { AlertTriangle, Clock, Image, Trash2 } from "lucide-react";
+
+const containerVariants = {
+  hidden: { opacity: 1 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,  // delay between each card
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+  exit: { opacity: 0, scale: 0.9, transition: { duration: 0.25 } },
+};
 
 export default function ReportFeed() {
   const [reports, setReports] = useState([]);
@@ -95,15 +112,45 @@ export default function ReportFeed() {
       {reports.length === 0 ? (
         <p className="text-gray-400 italic">No incidents reported yet.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reports.map((r, idx) => (
-            <motion.div
-              key={r.id}
-              className="rounded-2xl bg-white shadow-md hover:shadow-2xl transition border border-gray-100 overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * idx }}
-            >
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
+          <AnimatePresence mode="popLayout">
+            {reports.map((r, idx) => (
+              <motion.div
+                key={r.id}
+                variants={cardVariants}
+                layout
+                className="rounded-2xl bg-white shadow-md hover:shadow-2xl transition border border-gray-100 overflow-hidden relative"
+              >
+              {/* Delete Button */}
+              <button
+                onClick={async () => {
+                  if (confirm("Delete this incident report?")) {
+                    const { error } = await supabase.from("incidents").delete().eq("id", r.id);
+                    if (!error) {
+                      toast.success("✅ Incident deleted successfully!", {
+                        duration: 4000,
+                        position: "bottom-right",
+                      });
+                      fetchReports();
+                    } else {
+                      toast.error("❌ Failed to delete incident. Please try again.", {
+                        duration: 4000,
+                        position: "bottom-right",
+                      });
+                    }
+                  }
+                }}
+                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow transition z-10"
+                title="Delete Incident"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+
               {/* Gambar */}
               {r.photo_url ? (
                 <div className="relative">
@@ -145,9 +192,10 @@ export default function ReportFeed() {
                   </a>
                 )}
               </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
       )}
     </motion.div>
   );
