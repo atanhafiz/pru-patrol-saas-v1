@@ -1,10 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Camera, FileText, Clock } from "lucide-react";
+import { Camera, FileText, Clock, Map } from "lucide-react";
 
 export default function GuardBottomNav() {
   const location = useLocation();
 
   const navItems = [
+    { label: "Routes", icon: Map, path: "/guard/routes" }, // ✅ added
     { label: "Attendance", icon: Camera, path: "/guard/selfie" },
     { label: "Report", icon: FileText, path: "/guard/report" },
     { label: "Timeline", icon: Clock, path: "/guard/timeline" },
@@ -20,7 +21,7 @@ export default function GuardBottomNav() {
           <Link
             key={item.path}
             to={item.path}
-            className="flex flex-col items-center text-xs relative w-1/3"
+            className="flex flex-col items-center text-xs relative w-1/4"
           >
             {/* highlight bar atas icon */}
             <div
