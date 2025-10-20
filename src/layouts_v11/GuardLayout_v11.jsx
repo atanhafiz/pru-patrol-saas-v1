@@ -1,10 +1,13 @@
+// This layout is now disabled - functionality moved to main GuardLayout
+// Keeping file for reference but not importing anywhere
+
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { Home, ListChecks, Camera, Clock3, FileText } from "lucide-react";
 import LogoutButton from "../components/shared/LogoutButton";
 import { motion } from "framer-motion";
 import ErrorBoundary from "../shared_v11/components/ErrorBoundary";
 
-export default function GuardLayout_v11() {
+export default function GuardLayout_v11_DISABLED() {
   const location = useLocation();
 
   const navItems = [
