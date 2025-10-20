@@ -8,7 +8,6 @@ export default function GuardBottomNav() {
     { label: "Routes", icon: Map, path: "/guard/routes" }, // ✅ added
     { label: "Attendance", icon: Camera, path: "/guard/selfie" },
     { label: "Report", icon: FileText, path: "/guard/report" },
-    { label: "Timeline", icon: Clock, path: "/guard/timeline" },
   ];
 
   return (
@@ -21,7 +20,7 @@ export default function GuardBottomNav() {
           <Link
             key={item.path}
             to={item.path}
-            className="flex flex-col items-center text-xs relative w-1/4"
+            className="flex flex-col items-center text-xs relative w-1/3"
           >
             {/* highlight bar atas icon */}
             <div
