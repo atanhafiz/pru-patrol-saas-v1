@@ -56,10 +56,10 @@ export default function Landing() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B132B] mb-4">
+              <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B132B] leading-snug sm:leading-tight mt-6 sm:mt-10 text-center">
                 Realtime Security Patrol Management, Automated & Trusted.
               </h2>
-              <p className="text-gray-500 text-sm mt-2">
+              <p className="text-gray-500 text-sm sm:text-base mt-2 sm:mt-4 mb-4 sm:mb-6">
                 Trusted by professional security companies across Malaysia.
               </p>
               <p className="text-base sm:text-lg text-gray-600 mt-3 max-w-2xl">
@@ -73,7 +73,7 @@ export default function Landing() {
             >
               <Link 
                 to="/register" 
-                className="inline-block mt-6 bg-gradient-to-r from-blue-600 to-blue-700
+                className="w-10/12 sm:w-auto mx-auto bg-gradient-to-r from-blue-600 to-blue-700
                            hover:from-blue-700 hover:to-blue-800
                            text-white font-semibold px-6 py-3 rounded-xl
                            shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
@@ -96,8 +96,8 @@ export default function Landing() {
                 className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
               />
               <p className="absolute bottom-2 left-1/2 -translate-x-1/2
-                           text-xs sm:text-sm text-gray-700 bg-white/80
-                           backdrop-blur-sm px-3 py-1.5 rounded-full shadow">
+                           text-[10px] sm:text-xs text-gray-700 bg-white/80
+                           backdrop-blur-sm px-2 py-1 rounded-full shadow">
                 Live Admin Dashboard Preview
               </p>
             </div>
@@ -106,7 +106,7 @@ export default function Landing() {
       </header>
 
       <motion.section
-        className="max-w-6xl mx-auto mt-16 px-4 grid grid-cols-1 sm:grid-cols-3 gap-6 items-center"
+        className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 px-4 sm:px-0 items-center justify-center max-w-6xl mx-auto"
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -119,7 +119,7 @@ export default function Landing() {
             alt="AHE Tech Patrol Dashboard"
             className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
           />
-          <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs sm:text-sm text-gray-700 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow">
+          <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs bg-white/80 px-2 py-1 rounded-full shadow">
             AHE Tech Patrol Dashboard Preview
           </p>
         </div>
@@ -140,7 +140,7 @@ export default function Landing() {
       </motion.section>
 
       <motion.footer 
-        className="mt-20 bg-[#0B132B] text-gray-300 py-10"
+        className="mt-16 sm:mt-20 bg-[#0B132B] text-gray-300 py-8 sm:py-10 text-center sm:text-left"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
