@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm">
-        <div className="mx-auto w-full max-w-6xl px-4 py-3 flex items-center justify-between">
+      <nav className="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm z-50 flex items-center justify-between px-4 sm:px-8 py-2 sm:py-3">
+        <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
           <Link 
             to="/" 
             className="text-2xl font-bold tracking-wide text-[#0B132B] whitespace-nowrap"
@@ -13,16 +13,15 @@ export default function Landing() {
           >
             AHE Tech Patrol
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto mr-2 sm:mr-6">
             <Link 
               to="/login" 
               className="
                 bg-gradient-to-r from-blue-600 to-blue-700
                 hover:from-blue-700 hover:to-blue-800
-                text-white font-semibold
-                px-4 py-2 rounded-lg shadow
-                hover:shadow-md transition
-                active:scale-[0.98]
+                text-white font-medium text-sm sm:text-base
+                px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow
+                hover:shadow-md transition active:scale-[0.98]
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
               "
               aria-label="Login"
@@ -34,7 +33,7 @@ export default function Landing() {
               className="
                 border border-blue-300 text-blue-700
                 hover:bg-blue-50
-                px-4 py-2 rounded-lg
+                text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg
                 transition
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
                 group
