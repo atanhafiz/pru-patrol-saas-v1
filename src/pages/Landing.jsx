@@ -9,9 +9,9 @@ export default function Landing() {
           <Link 
             to="/" 
             className="text-2xl font-bold tracking-wide text-[#0B132B] whitespace-nowrap"
-            aria-label="AHE Tech Patrol — Home"
+            aria-label="AHE SmartPatrol — Home"
           >
-            AHE Tech Patrol
+            AHE SmartPatrol
           </Link>
           <div className="flex items-center gap-2 sm:gap-3 ml-auto mr-2 sm:mr-6">
             <Link 
@@ -115,7 +115,7 @@ export default function Landing() {
         <div className="col-span-2 relative">
           <img
             src="/images/dashboard-preview.png"
-            alt="AHE Tech Patrol Dashboard"
+            alt="AHE SmartPatrol Dashboard"
             className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
           />
           <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs sm:text-sm text-gray-700 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow">
@@ -148,7 +148,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-3 gap-8">
           {/* Column 1 — Brand */}
           <div>
-            <h2 className="text-white font-bold text-2xl mb-2">AHE Tech Patrol</h2>
+            <h2 className="text-white font-bold text-2xl mb-2">AHE SmartPatrol</h2>
             <p className="text-gray-400 text-sm leading-relaxed">
               Trusted patrol management solution for professional security teams.
             </p>
@@ -177,7 +177,7 @@ export default function Landing() {
 
         {/* Copyright */}
         <div className="mt-10 border-t border-gray-700 pt-5 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} AHE Technology Sdn Bhd • All Rights Reserved
+          © {new Date().getFullYear()} AHE Technology Sdn Bhd • AHE SmartPatrol • All Rights Reserved
         </div>
       </motion.footer>
     </div>

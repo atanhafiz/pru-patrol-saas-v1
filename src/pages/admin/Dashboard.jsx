@@ -333,7 +333,7 @@ export default function Dashboard() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          © {new Date().getFullYear()} AHE Tech • Secure Patrol Management System
+          © {new Date().getFullYear()} AHE SmartPatrol • Secure Patrol Management System
         </motion.div>
       </div>
     </AdminLayout_Clean>
