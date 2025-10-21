@@ -1,9 +1,29 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Helmet } from "react-helmet";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
+      <Helmet>
+        <title>AHE SmartPatrol — Realtime Security Patrol Management</title>
+        <meta name="description" content="AHE SmartPatrol helps security companies manage guard patrols, attendance, and incident reports in realtime. Trusted by professionals across Malaysia." />
+        <meta name="keywords" content="security patrol, guard management, attendance system, incident report, AHE SmartPatrol, Malaysia" />
+
+        {/* Open Graph / Social */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://ahe-smartpatrol.netlify.app/" />
+        <meta property="og:title" content="AHE SmartPatrol — Smart Guard Patrol System" />
+        <meta property="og:description" content="Smart & modern security patrol management platform trusted by security firms across Malaysia." />
+        <meta property="og:image" content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="AHE SmartPatrol — Smart Guard Patrol System" />
+        <meta name="twitter:description" content="Smart & modern security patrol management platform trusted by security firms across Malaysia." />
+        <meta name="twitter:image" content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg" />
+      </Helmet>
+      <div className="min-h-screen flex flex-col">
       <nav className="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm z-50 flex items-center justify-between px-4 sm:px-8 py-2 sm:py-3">
         <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
           <Link 
@@ -196,6 +216,7 @@ export default function Landing() {
           © {new Date().getFullYear()} AHE Technology Sdn Bhd • AHE SmartPatrol • All Rights Reserved
         </div>
       </motion.footer>
-    </div>
+      </div>
+    </>
   );
 }
