@@ -90,7 +90,7 @@ export default function Landing() {
           >
             <div className="relative w-full max-w-md mx-auto mt-8">
               <img
-                src="/images/dashboard-preview.png"
+                src="/images/dashboard-preview.jpg"
                 alt="Dashboard Preview"
                 className="w-full h-auto object-cover rounded-2xl shadow-lg border border-gray-200"
               />
@@ -114,7 +114,7 @@ export default function Landing() {
         {/* Dashboard image */}
         <div className="col-span-2 relative">
           <img
-            src="/images/dashboard-preview.png"
+            src="/images/dashboard-preview.jpg"
             alt="AHE SmartPatrol Dashboard"
             className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover"
           />
@@ -126,12 +126,12 @@ export default function Landing() {
         {/* Guard AI images */}
         <div className="flex flex-col gap-4">
           <img
-            src="/images/guard-ai1.png"
+            src="/images/guard-ai1.jpg"
             alt="Security Guard On Patrol"
             className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover"
           />
           <img
-            src="/images/guard-ai2.png"
+            src="/images/guard-ai2.jpg"
             alt="Guard Checkpoint Verification"
             className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover"
           />
