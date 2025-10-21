@@ -118,8 +118,8 @@ export default function Landing() {
         {/* Dashboard image */}
         <div className="col-span-2 md:col-span-[1.7] relative">
           <img
-            src="/images/dashboard-preview.jpg"
-            alt="AHE SmartPatrol Dashboard"
+            src="/images/guard-ai3.jpg"
+            alt="Guard AI Dashboard"
             loading="lazy"
             decoding="async"
             width={1280}
