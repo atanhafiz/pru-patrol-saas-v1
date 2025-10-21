@@ -92,7 +92,7 @@ export default function Landing() {
               <img
                 src="/images/dashboard-preview.png"
                 alt="Dashboard Preview"
-                className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
+                className="w-full h-auto object-cover rounded-2xl shadow-lg border border-gray-200"
               />
               <p className="absolute bottom-3 left-1/2 -translate-x-1/2
                            text-[10px] sm:text-xs text-gray-700 bg-white/90
