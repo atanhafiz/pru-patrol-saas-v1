@@ -47,7 +47,7 @@ export default function Landing() {
         </div>
       </nav>
 
-      <header className="min-h-screen flex flex-col justify-center items-center text-center px-4 bg-gradient-to-br from-[#f0f7ff] via-white to-[#e6f0ff]">
+      <header className="min-h-[90vh] flex flex-col justify-start items-center text-center px-4 pt-24 sm:pt-32 bg-gradient-to-br from-[#f0f7ff] via-white to-[#e6f0ff]">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row justify-between items-center">
           <div className="max-w-2xl lg:max-w-xl text-center lg:text-left">
             <motion.div
@@ -55,14 +55,14 @@ export default function Landing() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-[#0B132B] leading-snug sm:leading-tight mt-6 sm:mt-10 text-center">
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-[#0B132B] leading-snug sm:leading-tight max-w-2xl">
                 Realtime Security Patrol Management, Automated & Trusted.
-              </h2>
-              <p className="text-gray-500 text-sm sm:text-base mt-2 sm:mt-4 mb-4 sm:mb-6">
+              </h1>
+              <p className="text-gray-500 text-sm sm:text-base mt-3">
                 Trusted by professional security companies across Malaysia.
               </p>
-              <p className="text-base sm:text-lg text-gray-600 mt-3 max-w-2xl">
-                Urus rondaan, kehadiran & laporan pasukan anda dengan satu platform moden.
+              <p className="text-gray-600 text-sm sm:text-base mt-2 mb-6 max-w-md">
+                Manage patrols, attendance, and incident reports — all in one modern platform.
               </p>
             </motion.div>
             <motion.div
@@ -72,7 +72,7 @@ export default function Landing() {
             >
               <Link 
                 to="/register" 
-                className="w-10/12 sm:w-auto mx-auto bg-gradient-to-r from-blue-600 to-blue-700
+                className="mt-2 sm:mt-4 mb-8 bg-gradient-to-r from-blue-600 to-blue-700
                            hover:from-blue-700 hover:to-blue-800
                            text-white font-semibold px-6 py-3 rounded-xl
                            shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
