@@ -105,24 +105,12 @@ export default function Landing() {
       </header>
 
       <motion.section
-        className="relative w-full max-w-6xl mx-auto mt-16 sm:mt-24 mb-16 sm:mb-24 px-4 sm:px-0 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start justify-center"
+        className="relative w-full max-w-6xl mx-auto mt-16 sm:mt-24 mb-16 sm:mb-24 px-4 sm:px-0 grid grid-cols-1 sm:grid-cols-2 gap-4 items-start justify-center"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         viewport={{ once: true }}
       >
-        {/* Dashboard image */}
-        <div className="col-span-2 relative">
-          <img
-            src="/images/dashboard-preview.jpg"
-            alt="AHE SmartPatrol Dashboard"
-            className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover"
-          />
-          <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs sm:text-sm text-gray-700 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow">
-            Live Admin Dashboard Preview
-          </p>
-        </div>
-
         {/* Guard AI images */}
         <div className="flex flex-col gap-4">
           <img
