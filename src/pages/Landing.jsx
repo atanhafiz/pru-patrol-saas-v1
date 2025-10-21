@@ -105,6 +105,40 @@ export default function Landing() {
         </div>
       </header>
 
+      <motion.section
+        className="max-w-6xl mx-auto mt-16 px-4 grid grid-cols-1 sm:grid-cols-3 gap-6 items-center"
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        viewport={{ once: true }}
+      >
+        {/* Dashboard image */}
+        <div className="col-span-2 relative">
+          <img
+            src="/images/dashboard-preview.png"
+            alt="AHE Tech Patrol Dashboard"
+            className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
+          />
+          <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs sm:text-sm text-gray-700 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow">
+            AHE Tech Patrol Dashboard Preview
+          </p>
+        </div>
+
+        {/* Guard AI images */}
+        <div className="flex flex-col gap-4">
+          <img
+            src="/images/guard-ai1.png"
+            alt="Security Guard On Patrol"
+            className="rounded-2xl shadow-lg border border-gray-200 object-cover"
+          />
+          <img
+            src="/images/guard-ai2.png"
+            alt="Guard Checkpoint Verification"
+            className="rounded-2xl shadow-lg border border-gray-200 object-cover"
+          />
+        </div>
+      </motion.section>
+
       <motion.footer 
         className="mt-20 bg-[#0B132B] text-gray-300 py-10"
         initial={{ opacity: 0, y: 30 }}
