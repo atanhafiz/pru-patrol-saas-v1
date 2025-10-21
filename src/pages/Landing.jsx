@@ -8,64 +8,55 @@ export default function Landing() {
       <Helmet>
         {/* ===== Bahasa Melayu (Malaysia) ===== */}
         <title>AHE SmartPatrol — Sistem Rondaan Keselamatan Digital Malaysia</title>
-        <meta name="description" content="AHE SmartPatrol ialah sistem rondaan keselamatan digital untuk membantu syarikat keselamatan mengurus pengawal, laluan rondaan, kehadiran dan laporan insiden secara automatik serta masa nyata di seluruh Malaysia." />
-        <meta name="keywords" content="sistem rondaan keselamatan, aplikasi pengawal keselamatan, sistem kehadiran pengawal, laporan insiden, AHE SmartPatrol, AHE Technology, Malaysia, JMB, syarikat keselamatan" />
+        <meta
+          name="description"
+          content="AHE SmartPatrol ialah sistem rondaan keselamatan digital untuk membantu syarikat keselamatan mengurus pengawal, laluan rondaan, kehadiran dan laporan insiden secara automatik serta masa nyata di seluruh Malaysia."
+        />
+        <meta
+          name="keywords"
+          content="sistem rondaan keselamatan, aplikasi pengawal keselamatan, sistem kehadiran pengawal, laporan insiden, AHE SmartPatrol, AHE Technology, Malaysia, JMB, syarikat keselamatan"
+        />
 
         {/* ===== English (International) ===== */}
-        <meta name="description-en" content="AHE SmartPatrol is a digital security patrol system that helps security companies manage guards, patrol routes, attendance, and incident reports in real time across Malaysia." />
-        <meta name="keywords-en" content="security patrol system, guard management app, attendance tracking, incident reporting, AHE SmartPatrol, AHE Technology, Malaysia, JMB, security company" />
+        <meta
+          name="description-en"
+          content="AHE SmartPatrol is a digital security patrol system that helps security companies manage guards, patrol routes, attendance, and incident reports in real time across Malaysia."
+        />
+        <meta
+          name="keywords-en"
+          content="security patrol system, guard management app, attendance tracking, incident reporting, AHE SmartPatrol, AHE Technology, Malaysia, JMB, security company"
+        />
 
         {/* ===== Open Graph / Social ===== */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://ahe-smartpatrol.netlify.app/" />
-        <meta property="og:title" content="AHE SmartPatrol — Smart Guard Patrol System | Sistem Rondaan Keselamatan Digital Malaysia" />
-        <meta property="og:description" content="Sistem rondaan keselamatan pintar untuk syarikat keselamatan profesional di Malaysia. Smart and modern guard patrol management platform for security firms across Malaysia." />
-        <meta property="og:image" content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg" />
+        <meta
+          property="og:title"
+          content="AHE SmartPatrol — Smart Guard Patrol System | Sistem Rondaan Keselamatan Digital Malaysia"
+        />
+        <meta
+          property="og:description"
+          content="Sistem rondaan keselamatan pintar untuk syarikat keselamatan profesional di Malaysia. Smart and modern guard patrol management platform for security firms across Malaysia."
+        />
+        <meta
+          property="og:image"
+          content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg"
+        />
 
         {/* ===== Twitter Cards ===== */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="AHE SmartPatrol — Sistem Rondaan Keselamatan Digital Malaysia" />
-        <meta name="twitter:description" content="Urus rondaan keselamatan, kehadiran pengawal, dan laporan insiden dalam satu platform pintar masa nyata. Manage your security patrols, attendance, and incidents in one platform." />
-        <meta name="twitter:image" content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg" />
-
-        <script type="application/ld+json">
-          {`
-            {
-              "@context": "https://schema.org",
-              "@graph": [
-                {
-                  "@type": "Organization",
-                  "name": "AHE Technology Sdn Bhd",
-                  "url": "https://ahe-smartpatrol.netlify.app",
-                  "logo": "https://ahe-smartpatrol.netlify.app/images/logo.png",
-                  "sameAs": [
-                    "https://www.facebook.com/",
-                    "https://www.linkedin.com/",
-                    "https://www.instagram.com/"
-                  ],
-                  "description": "AHE Technology Sdn Bhd ialah syarikat teknologi Malaysia yang membangunkan sistem SaaS seperti AHE SmartPatrol untuk pengurusan keselamatan digital."
-                },
-                {
-                  "@type": "SoftwareApplication",
-                  "name": "AHE SmartPatrol",
-                  "operatingSystem": "Web",
-                  "applicationCategory": "SecurityApplication",
-                  "url": "https://ahe-smartpatrol.netlify.app",
-                  "image": "https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg",
-                  "publisher": {
-                    "@type": "Organization",
-                    "name": "AHE Technology Sdn Bhd",
-                    "logo": {
-                      "@type": "ImageObject",
-                      "url": "https://ahe-smartpatrol.netlify.app/images/logo.png"
-                    }
-                  },
-                  "description": "AHE SmartPatrol ialah sistem rondaan keselamatan digital masa nyata untuk syarikat keselamatan di Malaysia. Urus rondaan, kehadiran dan laporan insiden dalam satu platform moden. AHE SmartPatrol is a real-time security patrol management system built for Malaysian security firms."
-                }
-              ]
-            }
-          `}
-        </script>
+        <meta
+          name="twitter:title"
+          content="AHE SmartPatrol — Sistem Rondaan Keselamatan Digital Malaysia"
+        />
+        <meta
+          name="twitter:description"
+          content="Urus rondaan keselamatan, kehadiran pengawal, dan laporan insiden dalam satu platform pintar masa nyata. Manage your security patrols, attendance, and incidents in one platform."
+        />
+        <meta
+          name="twitter:image"
+          content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg"
+        />
       </Helmet>
 
       {/* Navigation */}
@@ -85,13 +76,26 @@ export default function Landing() {
             >
               Login
             </Link>
-            <Link
-              to="/register"
-              className="border border-blue-300 text-blue-700 hover:bg-blue-50 text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 group"
-            >
-              Register
-              <span className="block h-[2px] bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
-            </Link>
+
+            {/* WhatsApp Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <a
+                href="https://wa.me/601121268798?text=Hai%20AtanHafiz%2C%20saya%20berminat%20nak%20guna%20SmartPatrol%20untuk%20taman%20saya."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow hover:shadow-md transition active:scale-[0.98]"
+              >
+                WhatsApp Atanhafiz
+              </a>
+              <a
+                href="https://wa.me/60135315803?text=Hai%20ShahrulNizam%2C%20saya%20berminat%20nak%20guna%20SmartPatrol%20untuk%20taman%20saya."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow hover:shadow-md transition active:scale-[0.98]"
+              >
+                WhatsApp ShahrulNizam
+              </a>
+            </div>
           </div>
         </div>
       </nav>
@@ -121,12 +125,24 @@ export default function Landing() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <Link
-                to="/register"
-                className="mt-2 sm:mt-4 mb-8 sm:mb-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              >
-                Get Started
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <a
+                  href="https://wa.me/601121268798?text=Hai%20AtanHafiz%2C%20saya%20berminat%20nak%20guna%20SmartPatrol%20untuk%20taman%20saya."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  WhatsApp AtanHafiz
+                </a>
+                <a
+                  href="https://wa.me/60135315803?text=Hai%20ShahrulNizam%2C%20saya%20berminat%20nak%20guna%20SmartPatrol%20untuk%20taman%20saya."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                >
+                  WhatsApp ShahrulNizam
+                </a>
+              </div>
             </motion.div>
           </div>
 
@@ -221,8 +237,8 @@ export default function Landing() {
             <ul className="space-y-2 text-sm">
               <li><a href="/" className="hover:text-white transition">Home</a></li>
               <li><a href="/login" className="hover:text-white transition">Login</a></li>
-              <li><a href="/register" className="hover:text-white transition">Register</a></li>
-              <li><a href="/admin/dashboard" className="hover:text-white transition">Admin Dashboard</a></li>
+              <li><a href="https://wa.me/601121268798" className="hover:text-white transition" target="_blank" rel="noopener noreferrer">Contact Atanhafiz</a></li>
+              <li><a href="https://wa.me/60135315803" className="hover:text-white transition" target="_blank" rel="noopener noreferrer">Contact ShahrulNizam</a></li>
             </ul>
           </div>
 
