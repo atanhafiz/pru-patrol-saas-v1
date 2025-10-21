@@ -92,7 +92,11 @@ export default function Landing() {
               <img
                 src="/images/dashboard-preview.jpg"
                 alt="Dashboard Preview"
-                className="w-full h-auto object-cover rounded-2xl shadow-lg border border-gray-200"
+                loading="lazy"
+                decoding="async"
+                width={1280}
+                height={720}
+                className="w-full h-auto object-cover rounded-2xl shadow-lg border border-gray-200 brightness-[0.98] contrast-[1.02]"
               />
               <p className="absolute bottom-3 left-1/2 -translate-x-1/2
                            text-[10px] sm:text-xs text-gray-700 bg-white/90
@@ -116,12 +120,20 @@ export default function Landing() {
           <img
             src="/images/guard-ai1.jpg"
             alt="Security Guard On Patrol"
-            className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover"
+            loading="lazy"
+            decoding="async"
+            width={600}
+            height={800}
+            className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover brightness-[0.98] contrast-[1.02]"
           />
           <img
             src="/images/guard-ai2.jpg"
             alt="Guard Checkpoint Verification"
-            className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover"
+            loading="lazy"
+            decoding="async"
+            width={600}
+            height={800}
+            className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover brightness-[0.98] contrast-[1.02]"
           />
         </div>
       </motion.section>
