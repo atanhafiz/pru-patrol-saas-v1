@@ -32,20 +32,31 @@ export default function Register() {
 
       const role = email.toLowerCase() === "admin@ahetech.my" ? "admin" : "client";
 
-      const { error: insertErr } = await supabase.from("profiles").insert([
-        { 
-          id: user.id, 
-          email, 
-          full_name: fullName, 
-          role,
-          company_name: companyName,
-          contact_number: contactNumber
-        },
-      ]);
-      if (insertErr) throw insertErr;
+      if (role === "admin") {
+        // Insert admin into profiles table
+        const { error: insertErr } = await supabase.from("profiles").insert([
+          { 
+            id: user.id, 
+            email, 
+            full_name: fullName, 
+            role
+          },
+        ]);
+        if (insertErr) throw insertErr;
+      } else {
+        // Insert client into clients table
+        const { error: insertErr } = await supabase.from("clients").insert([
+          {
+            id: user.id,
+            full_name: fullName,
+            company_name: companyName,
+            contact_number: contactNumber,
+            email
+          }
+        ]);
+        if (insertErr) throw insertErr;
 
-      // Set localStorage for clients
-      if (role === "client") {
+        // Set localStorage for clients
         localStorage.setItem("companyName", companyName || "");
         localStorage.setItem("contactNumber", contactNumber || "");
         console.log("✅ localStorage updated:", companyName, contactNumber);
