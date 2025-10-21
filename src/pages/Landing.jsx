@@ -6,55 +6,27 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
-        {/* ===== Bahasa Melayu (Malaysia) ===== */}
-        <title>AHE SmartPatrol — Sistem Rondaan Keselamatan Digital Malaysia</title>
+        <title>AHE SmartPatrol — Smart Security Patrol System</title>
         <meta
           name="description"
-          content="AHE SmartPatrol ialah sistem rondaan keselamatan digital untuk membantu syarikat keselamatan mengurus pengawal, laluan rondaan, kehadiran dan laporan insiden secara automatik serta masa nyata di seluruh Malaysia."
+          content="AHE SmartPatrol is a digital security patrol management system that helps security companies and property management teams monitor guards, patrol routes, attendance, and incidents in real time across Malaysia."
         />
         <meta
           name="keywords"
-          content="sistem rondaan keselamatan, aplikasi pengawal keselamatan, sistem kehadiran pengawal, laporan insiden, AHE SmartPatrol, AHE Technology, Malaysia, JMB, syarikat keselamatan"
-        />
-
-        {/* ===== English (International) ===== */}
-        <meta
-          name="description-en"
-          content="AHE SmartPatrol is a digital security patrol system that helps security companies manage guards, patrol routes, attendance, and incident reports in real time across Malaysia."
-        />
-        <meta
-          name="keywords-en"
           content="security patrol system, guard management app, attendance tracking, incident reporting, AHE SmartPatrol, AHE Technology, Malaysia, JMB, security company"
         />
-
-        {/* ===== Open Graph / Social ===== */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://ahe-smartpatrol.netlify.app/" />
         <meta
           property="og:title"
-          content="AHE SmartPatrol — Smart Guard Patrol System | Sistem Rondaan Keselamatan Digital Malaysia"
+          content="AHE SmartPatrol — Smart Security Patrol Management Platform"
         />
         <meta
           property="og:description"
-          content="Sistem rondaan keselamatan pintar untuk syarikat keselamatan profesional di Malaysia. Smart and modern guard patrol management platform for security firms across Malaysia."
+          content="Smart, reliable, and real-time patrol management system trusted by professional security companies across Malaysia."
         />
         <meta
           property="og:image"
-          content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg"
-        />
-
-        {/* ===== Twitter Cards ===== */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content="AHE SmartPatrol — Sistem Rondaan Keselamatan Digital Malaysia"
-        />
-        <meta
-          name="twitter:description"
-          content="Urus rondaan keselamatan, kehadiran pengawal, dan laporan insiden dalam satu platform pintar masa nyata. Manage your security patrols, attendance, and incidents in one platform."
-        />
-        <meta
-          name="twitter:image"
           content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg"
         />
       </Helmet>
@@ -65,37 +37,16 @@ export default function Landing() {
           <Link
             to="/"
             className="text-2xl font-bold tracking-wide text-[#0B132B] whitespace-nowrap"
-            aria-label="AHE SmartPatrol — Home"
           >
             AHE SmartPatrol
           </Link>
           <div className="flex items-center gap-2 sm:gap-3 ml-auto mr-2 sm:mr-6">
             <Link
               to="/login"
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow hover:shadow-md transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow hover:shadow-md transition active:scale-[0.98]"
             >
               Login
             </Link>
-
-            {/* WhatsApp Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <a
-                href="https://wa.me/601121268798?text=Hai%20AtanHafiz%2C%20saya%20berminat%20nak%20guna%20SmartPatrol%20untuk%20taman%20saya."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow hover:shadow-md transition active:scale-[0.98]"
-              >
-                WhatsApp Atanhafiz
-              </a>
-              <a
-                href="https://wa.me/60135315803?text=Hai%20ShahrulNizam%2C%20saya%20berminat%20nak%20guna%20SmartPatrol%20untuk%20taman%20saya."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow hover:shadow-md transition active:scale-[0.98]"
-              >
-                WhatsApp ShahrulNizam
-              </a>
-            </div>
           </div>
         </div>
       </nav>
@@ -110,40 +61,51 @@ export default function Landing() {
               transition={{ duration: 0.6 }}
             >
               <h1 className="text-3xl sm:text-5xl font-extrabold text-[#0B132B] leading-snug sm:leading-tight max-w-2xl">
-                Realtime Security Patrol Management, Automated & Trusted.
+                Real-Time Security Patrol Management Platform
               </h1>
               <p className="text-gray-500 text-sm sm:text-base mt-3">
                 Trusted by professional security companies across Malaysia.
               </p>
               <p className="text-gray-600 text-sm sm:text-base mt-2 mb-6 max-w-md">
-                Manage patrols, attendance, and incident reports — all in one modern platform.
+                Manage patrol schedules, guard attendance, and incident reports seamlessly — all in one secure digital platform.
               </p>
             </motion.div>
 
+            {/* WhatsApp Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-3 sm:mb-4"
             >
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <a
-                  href="https://wa.me/601121268798?text=Hai%20AtanHafiz%2C%20saya%20berminat%20nak%20guna%20SmartPatrol%20untuk%20taman%20saya."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  WhatsApp AtanHafiz
-                </a>
-                <a
-                  href="https://wa.me/60135315803?text=Hai%20ShahrulNizam%2C%20saya%20berminat%20nak%20guna%20SmartPatrol%20untuk%20taman%20saya."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  WhatsApp ShahrulNizam
-                </a>
-              </div>
+              <a
+                href="https://wa.me/601121268798?text=Hello%20AtanHafiz%2C%20I%27m%20interested%20to%20know%20more%20about%20AHE%20SmartPatrol%20for%20our%20residential%20area."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              >
+                WhatsApp AtanHafiz
+              </a>
+
+              <a
+                href="https://wa.me/60135315803?text=Hello%20Shahrul%20Nizam%2C%20I%27m%20interested%20to%20discuss%20how%20AHE%20SmartPatrol%20can%20help%20our%20security%20operations."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              >
+                WhatsApp Shahrul Nizam
+              </a>
             </motion.div>
+
+            {/* Info Label */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="text-xs sm:text-sm text-gray-500 italic mt-2"
+            >
+              Click the buttons above to contact us directly via WhatsApp 📱
+            </motion.p>
           </div>
 
           <motion.div
@@ -156,7 +118,7 @@ export default function Landing() {
             <div className="relative w-full max-w-md mx-auto mt-8">
               <img
                 src="/images/dashboard-preview.jpg"
-                alt="Dashboard Preview"
+                alt="Admin Dashboard Preview"
                 loading="lazy"
                 decoding="async"
                 width={1280}
@@ -171,7 +133,7 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Secondary Section */}
+      {/* Secondary Section (Guard AI Images) */}
       <motion.section
         className="relative w-full max-w-6xl mx-auto mt-16 sm:mt-24 mb-16 sm:mb-24 px-4 sm:px-0 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 lg:gap-6 items-start justify-center"
         initial={{ opacity: 0, y: 30 }}
@@ -226,9 +188,12 @@ export default function Landing() {
       >
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-3 gap-8">
           <div>
-            <h2 className="text-white font-bold text-2xl mb-2">AHE SmartPatrol</h2>
+            <h2 className="text-white font-bold text-2xl mb-2">
+              AHE SmartPatrol
+            </h2>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Trusted patrol management solution for professional security teams.
+              Trusted patrol management solution for professional security
+              teams.
             </p>
           </div>
 
@@ -237,8 +202,7 @@ export default function Landing() {
             <ul className="space-y-2 text-sm">
               <li><a href="/" className="hover:text-white transition">Home</a></li>
               <li><a href="/login" className="hover:text-white transition">Login</a></li>
-              <li><a href="https://wa.me/601121268798" className="hover:text-white transition" target="_blank" rel="noopener noreferrer">Contact Atanhafiz</a></li>
-              <li><a href="https://wa.me/60135315803" className="hover:text-white transition" target="_blank" rel="noopener noreferrer">Contact ShahrulNizam</a></li>
+              <li><a href="/admin/dashboard" className="hover:text-white transition">Admin Dashboard</a></li>
             </ul>
           </div>
 
@@ -252,7 +216,8 @@ export default function Landing() {
         </div>
 
         <div className="mt-10 border-t border-gray-700 pt-5 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} AHE Technology Sdn Bhd • AHE SmartPatrol • All Rights Reserved
+          © {new Date().getFullYear()} AHE Technology Sdn Bhd • AHE SmartPatrol •
+          All Rights Reserved
         </div>
       </motion.footer>
     </div>
