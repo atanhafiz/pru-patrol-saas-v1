@@ -6,46 +6,27 @@ export default function Landing() {
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
-        <title>AHE SmartPatrol — Realtime Security Patrol Management</title>
-        <meta
-          name="description"
-          content="AHE SmartPatrol helps security companies manage guard patrols, attendance, and incident reports in realtime. Trusted by professionals across Malaysia."
-        />
-        <meta
-          name="keywords"
-          content="security patrol, guard management, attendance system, incident report, AHE SmartPatrol, Malaysia"
-        />
+        {/* ===== Bahasa Melayu (Malaysia) ===== */}
+        <title>AHE SmartPatrol — Sistem Rondaan Keselamatan Digital Malaysia</title>
+        <meta name="description" content="AHE SmartPatrol ialah sistem rondaan keselamatan digital untuk membantu syarikat keselamatan mengurus pengawal, laluan rondaan, kehadiran dan laporan insiden secara automatik serta masa nyata di seluruh Malaysia." />
+        <meta name="keywords" content="sistem rondaan keselamatan, aplikasi pengawal keselamatan, sistem kehadiran pengawal, laporan insiden, AHE SmartPatrol, AHE Technology, Malaysia, JMB, syarikat keselamatan" />
 
-        {/* Open Graph / Social */}
+        {/* ===== English (International) ===== */}
+        <meta name="description-en" content="AHE SmartPatrol is a digital security patrol system that helps security companies manage guards, patrol routes, attendance, and incident reports in real time across Malaysia." />
+        <meta name="keywords-en" content="security patrol system, guard management app, attendance tracking, incident reporting, AHE SmartPatrol, AHE Technology, Malaysia, JMB, security company" />
+
+        {/* ===== Open Graph / Social ===== */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://ahe-smartpatrol.netlify.app/" />
-        <meta
-          property="og:title"
-          content="AHE SmartPatrol — Smart Guard Patrol System"
-        />
-        <meta
-          property="og:description"
-          content="Smart & modern security patrol management platform trusted by security firms across Malaysia."
-        />
-        <meta
-          property="og:image"
-          content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg"
-        />
+        <meta property="og:title" content="AHE SmartPatrol — Smart Guard Patrol System | Sistem Rondaan Keselamatan Digital Malaysia" />
+        <meta property="og:description" content="Sistem rondaan keselamatan pintar untuk syarikat keselamatan profesional di Malaysia. Smart and modern guard patrol management platform for security firms across Malaysia." />
+        <meta property="og:image" content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg" />
 
-        {/* Twitter */}
+        {/* ===== Twitter Cards ===== */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta
-          name="twitter:title"
-          content="AHE SmartPatrol — Smart Guard Patrol System"
-        />
-        <meta
-          name="twitter:description"
-          content="Smart & modern security patrol management platform trusted by security firms across Malaysia."
-        />
-        <meta
-          name="twitter:image"
-          content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg"
-        />
+        <meta name="twitter:title" content="AHE SmartPatrol — Sistem Rondaan Keselamatan Digital Malaysia" />
+        <meta name="twitter:description" content="Urus rondaan keselamatan, kehadiran pengawal, dan laporan insiden dalam satu platform pintar masa nyata. Manage your security patrols, attendance, and incidents in one platform." />
+        <meta name="twitter:image" content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg" />
       </Helmet>
 
       {/* Navigation */}
