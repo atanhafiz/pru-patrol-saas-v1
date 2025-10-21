@@ -47,7 +47,7 @@ export default function Landing() {
         </div>
       </nav>
 
-      <header className="min-h-[90vh] flex flex-col justify-start items-center text-center px-4 pt-24 sm:pt-32 bg-gradient-to-br from-[#f0f7ff] via-white to-[#e6f0ff]">
+      <header className="min-h-[90vh] flex flex-col justify-start items-center text-center px-4 pt-24 sm:pt-32 mb-10 sm:mb-16 bg-gradient-to-br from-[#f0f7ff] via-white to-[#e6f0ff]">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row justify-between items-center">
           <div className="max-w-2xl lg:max-w-xl text-center lg:text-left">
             <motion.div
@@ -72,7 +72,7 @@ export default function Landing() {
             >
               <Link 
                 to="/register" 
-                className="mt-2 sm:mt-4 mb-8 bg-gradient-to-r from-blue-600 to-blue-700
+                className="mt-2 sm:mt-4 mb-8 sm:mb-12 bg-gradient-to-r from-blue-600 to-blue-700
                            hover:from-blue-700 hover:to-blue-800
                            text-white font-semibold px-6 py-3 rounded-xl
                            shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
@@ -94,9 +94,9 @@ export default function Landing() {
                 alt="Dashboard Preview"
                 className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
               />
-              <p className="absolute bottom-2 left-1/2 -translate-x-1/2
-                           text-[10px] sm:text-xs text-gray-700 bg-white/80
-                           backdrop-blur-sm px-2 py-1 rounded-full shadow">
+              <p className="absolute bottom-3 left-1/2 -translate-x-1/2
+                           text-[10px] sm:text-xs text-gray-700 bg-white/90
+                           backdrop-blur-sm px-3 py-1 rounded-full shadow">
                 Live Admin Dashboard Preview
               </p>
             </div>
@@ -105,7 +105,7 @@ export default function Landing() {
       </header>
 
       <motion.section
-        className="relative w-full max-w-6xl mx-auto mt-12 sm:mt-20 px-4 sm:px-0 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start justify-center"
+        className="relative w-full max-w-6xl mx-auto mt-16 sm:mt-24 mb-16 sm:mb-24 px-4 sm:px-0 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start justify-center"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -116,7 +116,7 @@ export default function Landing() {
           <img
             src="/images/dashboard-preview.png"
             alt="AHE SmartPatrol Dashboard"
-            className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
+            className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover"
           />
           <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs sm:text-sm text-gray-700 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow">
             Live Admin Dashboard Preview
@@ -128,18 +128,18 @@ export default function Landing() {
           <img
             src="/images/guard-ai1.png"
             alt="Security Guard On Patrol"
-            className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
+            className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover"
           />
           <img
             src="/images/guard-ai2.png"
             alt="Guard Checkpoint Verification"
-            className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
+            className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover"
           />
         </div>
       </motion.section>
 
       <motion.footer 
-        className="mt-16 sm:mt-20 bg-[#0B132B] text-gray-300 py-8 sm:py-10 text-center sm:text-left"
+        className="mt-16 sm:mt-24 bg-[#0B132B] text-gray-300 py-10 sm:py-14 text-center sm:text-left"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
