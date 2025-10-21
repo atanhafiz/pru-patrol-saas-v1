@@ -105,8 +105,8 @@ export default function Landing() {
       </header>
 
       <motion.section
-        className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 px-4 sm:px-0 items-center justify-center max-w-6xl mx-auto"
-        initial={{ opacity: 0, y: 40 }}
+        className="relative w-full max-w-6xl mx-auto mt-12 sm:mt-20 px-4 sm:px-0 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start justify-center"
+        initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         viewport={{ once: true }}
@@ -118,8 +118,8 @@ export default function Landing() {
             alt="AHE Tech Patrol Dashboard"
             className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
           />
-          <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs bg-white/80 px-2 py-1 rounded-full shadow">
-            AHE Tech Patrol Dashboard Preview
+          <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs sm:text-sm text-gray-700 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow">
+            Live Admin Dashboard Preview
           </p>
         </div>
 
@@ -128,12 +128,12 @@ export default function Landing() {
           <img
             src="/images/guard-ai1.png"
             alt="Security Guard On Patrol"
-            className="rounded-2xl shadow-lg border border-gray-200 object-cover"
+            className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
           />
           <img
             src="/images/guard-ai2.png"
             alt="Guard Checkpoint Verification"
-            className="rounded-2xl shadow-lg border border-gray-200 object-cover"
+            className="rounded-2xl shadow-lg border border-gray-200 w-full h-auto object-cover"
           />
         </div>
       </motion.section>
