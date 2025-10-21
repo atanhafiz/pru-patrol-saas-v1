@@ -4,61 +4,70 @@ import { Helmet } from "react-helmet";
 
 export default function Landing() {
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Helmet>
         <title>AHE SmartPatrol — Realtime Security Patrol Management</title>
-        <meta name="description" content="AHE SmartPatrol helps security companies manage guard patrols, attendance, and incident reports in realtime. Trusted by professionals across Malaysia." />
-        <meta name="keywords" content="security patrol, guard management, attendance system, incident report, AHE SmartPatrol, Malaysia" />
+        <meta
+          name="description"
+          content="AHE SmartPatrol helps security companies manage guard patrols, attendance, and incident reports in realtime. Trusted by professionals across Malaysia."
+        />
+        <meta
+          name="keywords"
+          content="security patrol, guard management, attendance system, incident report, AHE SmartPatrol, Malaysia"
+        />
 
         {/* Open Graph / Social */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://ahe-smartpatrol.netlify.app/" />
-        <meta property="og:title" content="AHE SmartPatrol — Smart Guard Patrol System" />
-        <meta property="og:description" content="Smart & modern security patrol management platform trusted by security firms across Malaysia." />
-        <meta property="og:image" content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg" />
+        <meta
+          property="og:title"
+          content="AHE SmartPatrol — Smart Guard Patrol System"
+        />
+        <meta
+          property="og:description"
+          content="Smart & modern security patrol management platform trusted by security firms across Malaysia."
+        />
+        <meta
+          property="og:image"
+          content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg"
+        />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="AHE SmartPatrol — Smart Guard Patrol System" />
-        <meta name="twitter:description" content="Smart & modern security patrol management platform trusted by security firms across Malaysia." />
-        <meta name="twitter:image" content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg" />
+        <meta
+          name="twitter:title"
+          content="AHE SmartPatrol — Smart Guard Patrol System"
+        />
+        <meta
+          name="twitter:description"
+          content="Smart & modern security patrol management platform trusted by security firms across Malaysia."
+        />
+        <meta
+          name="twitter:image"
+          content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg"
+        />
       </Helmet>
-      <div className="min-h-screen flex flex-col">
+
+      {/* Navigation */}
       <nav className="sticky top-0 bg-white/90 backdrop-blur-md shadow-sm z-50 flex items-center justify-between px-4 sm:px-8 py-2 sm:py-3">
         <div className="mx-auto w-full max-w-6xl flex items-center justify-between">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="text-2xl font-bold tracking-wide text-[#0B132B] whitespace-nowrap"
             aria-label="AHE SmartPatrol — Home"
           >
             AHE SmartPatrol
           </Link>
           <div className="flex items-center gap-2 sm:gap-3 ml-auto mr-2 sm:mr-6">
-            <Link 
-              to="/login" 
-              className="
-                bg-gradient-to-r from-blue-600 to-blue-700
-                hover:from-blue-700 hover:to-blue-800
-                text-white font-medium text-sm sm:text-base
-                px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow
-                hover:shadow-md transition active:scale-[0.98]
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
-              "
-              aria-label="Login"
+            <Link
+              to="/login"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow hover:shadow-md transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               Login
             </Link>
-            <Link 
-              to="/register" 
-              className="
-                border border-blue-300 text-blue-700
-                hover:bg-blue-50
-                text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg
-                transition
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2
-                group
-              "
-              aria-label="Register"
+            <Link
+              to="/register"
+              className="border border-blue-300 text-blue-700 hover:bg-blue-50 text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 group"
             >
               Register
               <span className="block h-[2px] bg-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
@@ -67,6 +76,7 @@ export default function Landing() {
         </div>
       </nav>
 
+      {/* Hero Section */}
       <header className="min-h-[90vh] flex flex-col justify-start items-center text-center px-4 pt-24 sm:pt-32 mb-10 sm:mb-16 bg-gradient-to-br from-[#f0f7ff] via-white to-[#e6f0ff]">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row justify-between items-center">
           <div className="max-w-2xl lg:max-w-xl text-center lg:text-left">
@@ -85,22 +95,21 @@ export default function Landing() {
                 Manage patrols, attendance, and incident reports — all in one modern platform.
               </p>
             </motion.div>
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <Link 
-                to="/register" 
-                className="mt-2 sm:mt-4 mb-8 sm:mb-12 bg-gradient-to-r from-blue-600 to-blue-700
-                           hover:from-blue-700 hover:to-blue-800
-                           text-white font-semibold px-6 py-3 rounded-xl
-                           shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              <Link
+                to="/register"
+                className="mt-2 sm:mt-4 mb-8 sm:mb-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               >
                 Get Started
               </Link>
             </motion.div>
           </div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -118,9 +127,7 @@ export default function Landing() {
                 height={720}
                 className="w-full h-auto object-cover rounded-2xl shadow-lg border border-gray-200 brightness-[0.98] contrast-[1.02]"
               />
-              <p className="absolute bottom-3 left-1/2 -translate-x-1/2
-                           text-[10px] sm:text-xs text-gray-700 bg-white/90
-                           backdrop-blur-sm px-3 py-1 rounded-full shadow">
+              <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-gray-700 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow">
                 Live Admin Dashboard Preview
               </p>
             </div>
@@ -128,6 +135,7 @@ export default function Landing() {
         </div>
       </header>
 
+      {/* Secondary Section */}
       <motion.section
         className="relative w-full max-w-6xl mx-auto mt-16 sm:mt-24 mb-16 sm:mb-24 px-4 sm:px-0 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 lg:gap-6 items-start justify-center"
         initial={{ opacity: 0, y: 30 }}
@@ -135,7 +143,6 @@ export default function Landing() {
         transition={{ duration: 0.6 }}
         viewport={{ once: true }}
       >
-        {/* Dashboard image */}
         <div className="col-span-2 md:col-span-[1.7] relative">
           <img
             src="/images/guard-ai3.jpg"
@@ -151,7 +158,6 @@ export default function Landing() {
           </p>
         </div>
 
-        {/* Guard AI images */}
         <div className="flex flex-col gap-3 sm:gap-4 sm:mt-4 md:mt-6 lg:mt-8">
           <img
             src="/images/guard-ai1.jpg"
@@ -174,7 +180,8 @@ export default function Landing() {
         </div>
       </motion.section>
 
-      <motion.footer 
+      {/* Footer */}
+      <motion.footer
         className="mt-16 sm:mt-24 bg-[#0B132B] text-gray-300 py-10 sm:py-14 text-center sm:text-left"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -182,7 +189,6 @@ export default function Landing() {
         viewport={{ once: true }}
       >
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-3 gap-8">
-          {/* Column 1 — Brand */}
           <div>
             <h2 className="text-white font-bold text-2xl mb-2">AHE SmartPatrol</h2>
             <p className="text-gray-400 text-sm leading-relaxed">
@@ -190,7 +196,6 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Column 2 — Quick Links */}
           <div>
             <h3 className="text-white font-semibold mb-3">Quick Links</h3>
             <ul className="space-y-2 text-sm">
@@ -201,7 +206,6 @@ export default function Landing() {
             </ul>
           </div>
 
-          {/* Column 3 — Contact */}
           <div>
             <h3 className="text-white font-semibold mb-3">Contact</h3>
             <p className="text-sm text-gray-400">
@@ -211,12 +215,10 @@ export default function Landing() {
           </div>
         </div>
 
-        {/* Copyright */}
         <div className="mt-10 border-t border-gray-700 pt-5 text-center text-sm text-gray-500">
           © {new Date().getFullYear()} AHE Technology Sdn Bhd • AHE SmartPatrol • All Rights Reserved
         </div>
       </motion.footer>
-      </div>
-    </>
+    </div>
   );
 }
