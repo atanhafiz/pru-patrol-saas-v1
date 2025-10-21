@@ -27,6 +27,45 @@ export default function Landing() {
         <meta name="twitter:title" content="AHE SmartPatrol — Sistem Rondaan Keselamatan Digital Malaysia" />
         <meta name="twitter:description" content="Urus rondaan keselamatan, kehadiran pengawal, dan laporan insiden dalam satu platform pintar masa nyata. Manage your security patrols, attendance, and incidents in one platform." />
         <meta name="twitter:image" content="https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg" />
+
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "name": "AHE Technology Sdn Bhd",
+                  "url": "https://ahe-smartpatrol.netlify.app",
+                  "logo": "https://ahe-smartpatrol.netlify.app/images/logo.png",
+                  "sameAs": [
+                    "https://www.facebook.com/",
+                    "https://www.linkedin.com/",
+                    "https://www.instagram.com/"
+                  ],
+                  "description": "AHE Technology Sdn Bhd ialah syarikat teknologi Malaysia yang membangunkan sistem SaaS seperti AHE SmartPatrol untuk pengurusan keselamatan digital."
+                },
+                {
+                  "@type": "SoftwareApplication",
+                  "name": "AHE SmartPatrol",
+                  "operatingSystem": "Web",
+                  "applicationCategory": "SecurityApplication",
+                  "url": "https://ahe-smartpatrol.netlify.app",
+                  "image": "https://ahe-smartpatrol.netlify.app/images/guard-ai3.jpg",
+                  "publisher": {
+                    "@type": "Organization",
+                    "name": "AHE Technology Sdn Bhd",
+                    "logo": {
+                      "@type": "ImageObject",
+                      "url": "https://ahe-smartpatrol.netlify.app/images/logo.png"
+                    }
+                  },
+                  "description": "AHE SmartPatrol ialah sistem rondaan keselamatan digital masa nyata untuk syarikat keselamatan di Malaysia. Urus rondaan, kehadiran dan laporan insiden dalam satu platform moden. AHE SmartPatrol is a real-time security patrol management system built for Malaysian security firms."
+                }
+              ]
+            }
+          `}
+        </script>
       </Helmet>
 
       {/* Navigation */}
