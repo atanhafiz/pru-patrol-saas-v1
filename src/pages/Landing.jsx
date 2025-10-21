@@ -109,14 +109,30 @@ export default function Landing() {
       </header>
 
       <motion.section
-        className="relative w-full max-w-6xl mx-auto mt-16 sm:mt-24 mb-16 sm:mb-24 px-4 sm:px-0 grid grid-cols-1 sm:grid-cols-2 gap-4 items-start justify-center"
+        className="relative w-full max-w-6xl mx-auto mt-16 sm:mt-24 mb-16 sm:mb-24 px-4 sm:px-0 grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 lg:gap-6 items-start justify-center"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
         viewport={{ once: true }}
       >
+        {/* Dashboard image */}
+        <div className="col-span-2 md:col-span-[1.7] relative">
+          <img
+            src="/images/dashboard-preview.jpg"
+            alt="AHE SmartPatrol Dashboard"
+            loading="lazy"
+            decoding="async"
+            width={1280}
+            height={720}
+            className="w-full h-auto rounded-2xl shadow-lg border border-gray-200 object-cover brightness-[0.98] contrast-[1.02]"
+          />
+          <p className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs sm:text-sm text-gray-700 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow">
+            Live Admin Dashboard Preview
+          </p>
+        </div>
+
         {/* Guard AI images */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4 sm:mt-4 md:mt-6 lg:mt-8">
           <img
             src="/images/guard-ai1.jpg"
             alt="Security Guard On Patrol"
