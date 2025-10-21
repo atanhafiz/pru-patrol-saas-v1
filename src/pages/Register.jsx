@@ -6,8 +6,8 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [guardName, setGuardName] = useState("");
-  const [plateNo, setPlateNo] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [contactNumber, setContactNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const navigate = useNavigate();
@@ -30,23 +30,30 @@ export default function Register() {
         
       if (!user) throw new Error("Registration success but no session/user.");
 
-      const role = email.toLowerCase() === "admin@ahetech.my" ? "admin" : "guard";
+      const role = email.toLowerCase() === "admin@ahetech.my" ? "admin" : "client";
 
       const { error: insertErr } = await supabase.from("profiles").insert([
-        { id: user.id, email, full_name: fullName, role },
+        { 
+          id: user.id, 
+          email, 
+          full_name: fullName, 
+          role,
+          company_name: companyName,
+          contact_number: contactNumber
+        },
       ]);
       if (insertErr) throw insertErr;
 
-      // Set localStorage for guards
-      if (role === "guard") {
-        localStorage.setItem("guardName", guardName || fullName);
-        localStorage.setItem("plateNo", plateNo || "Unknown");
-        console.log("✅ localStorage updated:", guardName || fullName, plateNo || "Unknown");
+      // Set localStorage for clients
+      if (role === "client") {
+        localStorage.setItem("companyName", companyName || "");
+        localStorage.setItem("contactNumber", contactNumber || "");
+        console.log("✅ localStorage updated:", companyName, contactNumber);
       }
 
       setMsg("✅ Registration complete. Redirecting...");
       setTimeout(() => {
-        navigate(role === "admin" ? "/admin/dashboard" : "/guard/dashboard");
+        navigate(role === "admin" ? "/admin/dashboard" : "/client/dashboard");
       }, 600);
     } catch (err) {
       console.error("Register error:", err.message);
@@ -59,7 +66,7 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-soft px-4">
       <form onSubmit={handleRegister} className="bg-white shadow-xl p-8 rounded-2xl w-full max-w-md">
-        <h2 className="text-3xl font-bold text-center mb-6 text-primary">Create Your Account</h2>
+        <h2 className="text-3xl font-bold text-center mb-6 text-primary">Create Company Account</h2>
 
         {msg && (
           <p className={`text-sm text-center mb-4 ${msg.startsWith("✅") ? "text-green-600" : "text-red-500"}`}>
@@ -69,17 +76,32 @@ export default function Register() {
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-primary mb-1">Full Name</label>
-          <input type="text" placeholder="John Doe" value={fullName} onChange={(e)=>setFullName(e.target.value)} className="border border-gray-300 w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required />
+          <input type="text" placeholder="Atanhafiz" value={fullName} onChange={(e)=>setFullName(e.target.value)} className="border border-gray-300 w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" required />
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-primary mb-1">Guard Name</label>
-          <input type="text" placeholder="Amir" value={guardName} onChange={(e)=>setGuardName(e.target.value)} className="border border-gray-300 w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" />
+          <label className="block text-sm font-medium text-primary mb-1">Company / Site Name</label>
+          <input 
+            type="text" 
+            name="company_name"
+            placeholder="e.g. Prima Residensi Utama" 
+            value={companyName} 
+            onChange={(e)=>setCompanyName(e.target.value)} 
+            className="border border-gray-300 w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" 
+            required 
+          />
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-primary mb-1">Plate Number</label>
-          <input type="text" placeholder="ABC1234" value={plateNo} onChange={(e)=>setPlateNo(e.target.value)} className="border border-gray-300 w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" />
+          <label className="block text-sm font-medium text-primary mb-1">Contact Number</label>
+          <input 
+            type="tel" 
+            name="contact_number"
+            placeholder="e.g. +60 12-345 6789" 
+            value={contactNumber} 
+            onChange={(e)=>setContactNumber(e.target.value)} 
+            className="border border-gray-300 w-full p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent" 
+          />
         </div>
 
         <div className="mb-4">
