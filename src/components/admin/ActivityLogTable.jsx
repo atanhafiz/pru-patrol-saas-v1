@@ -134,8 +134,22 @@ export default function ActivityLogTable() {
 
               return (
                 <tr key={l.id} className="border-b hover:bg-gray-50 transition">
-                  <td className="p-3 font-semibold text-primary">
-                    {l.event_type || "—"}
+                  <td className="p-3 font-semibold">
+                    <span
+                      className={`px-2 py-1 rounded-lg text-xs font-bold ${
+                        l.event_type === "INCIDENT"
+                          ? "bg-rose-100 text-rose-700"
+                          : l.event_type === "PATROL"
+                          ? "bg-green-100 text-green-700"
+                          : l.event_type === "LOGIN"
+                          ? "bg-blue-100 text-blue-700"
+                          : l.event_type === "SELFIE"
+                          ? "bg-indigo-100 text-indigo-700"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {l.event_type || "—"}
+                    </span>
                   </td>
                   <td className="p-3 text-gray-600">
                     {l.description || "No description"}
