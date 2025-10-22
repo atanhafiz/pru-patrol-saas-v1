@@ -21,6 +21,7 @@ export default function AdminAlertCenter() {
   };
 
   useEffect(() => {
+    console.log("🚨 ALERT-REALTIME: component mounted");
     fetchAlerts();
     
     // Auto-archive old reports
@@ -34,29 +35,52 @@ export default function AdminAlertCenter() {
     };
     autoArchiveOldReports();
     
+    console.log("🚨 ALERT-REALTIME: subscribing to incidents table...");
     const channel = supabase
-      .channel("alert_center")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "incidents" },
-        (payload) => {
-          console.log("🚨 ALERT-DEBUG: realtime triggered", payload);
-          setAlerts((prev) => [payload.new, ...prev]);
-        }
-      )
-      .subscribe();
-    return () => supabase.removeChannel(channel);
+      .channel("alert_center");
+    
+    console.log("🚨 ALERT-REALTIME: channel created", "alert_center");
+    
+    channel.on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "incidents" },
+      (payload) => {
+        console.log("🚨 ALERT-REALTIME: event received", payload);
+        console.log("🚨 ALERT-REALTIME: updating state with new incident", payload.new);
+        setAlerts((prev) => {
+          const newList = [payload.new, ...prev];
+          console.log("🚨 ALERT-REALTIME: old length", prev.length, "new length", newList.length);
+          return newList;
+        });
+      }
+    );
+    
+    // Add error handling
+    channel.on("system", { event: "error" }, (err) => {
+      console.error("🚨 ALERT-REALTIME: subscription error", err);
+    });
+    
+    channel.subscribe();
+    console.log("🚨 ALERT-REALTIME: subscription started");
+    
+    return () => {
+      console.log("🚨 ALERT-REALTIME: unsubscribed on unmount");
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (
     <>
       {/* Trigger Button */}
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          console.log("🚨 ALERT-REALTIME: Alert Center button clicked, current alerts count:", alerts.length);
+          setOpen(!open);
+        }}
         className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-lg shadow hover:bg-accent/90 transition"
       >
         <Bell className="w-5 h-5" />
-        Alert Center
+        Alert Center ({alerts.length})
       </button>
 
       {/* Slide-in Panel */}
@@ -82,6 +106,10 @@ export default function AdminAlertCenter() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {(() => {
+                console.log("🚨 ALERT-REALTIME: Panel rendering with alerts:", alerts.length, alerts);
+                return null;
+              })()}
               {alerts.length === 0 ? (
                 <p className="text-gray-400 italic">No incidents yet.</p>
               ) : (
