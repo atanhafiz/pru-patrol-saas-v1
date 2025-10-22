@@ -134,17 +134,15 @@ export default function ActivityLogTable() {
 
               return (
                 <tr key={l.id} className="border-b hover:bg-gray-50 transition">
-                  <td className="p-3 font-semibold">
+                  <td className="p-3 font-semibold text-primary">
                     <span
                       className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                        l.event_type === "INCIDENT"
+                        l.event_type?.includes("INCIDENT")
                           ? "bg-rose-100 text-rose-700"
-                          : l.event_type === "PATROL"
-                          ? "bg-green-100 text-green-700"
-                          : l.event_type === "LOGIN"
-                          ? "bg-blue-100 text-blue-700"
-                          : l.event_type === "SELFIE"
+                          : l.event_type?.includes("SELFIE")
                           ? "bg-indigo-100 text-indigo-700"
+                          : l.event_type?.includes("SNAP")
+                          ? "bg-amber-100 text-amber-700"
                           : "bg-gray-100 text-gray-600"
                       }`}
                     >
@@ -159,7 +157,15 @@ export default function ActivityLogTable() {
                   </td>
                   <td className="p-3 flex items-center gap-1 text-xs text-gray-500">
                     <Clock className="w-3 h-3" />
-                    {formattedDate}
+                    {l.created_at
+                      ? new Date(l.created_at).toLocaleString("en-MY", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "—"}
                   </td>
                 </tr>
               );

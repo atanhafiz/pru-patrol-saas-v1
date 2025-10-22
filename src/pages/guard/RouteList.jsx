@@ -254,6 +254,16 @@ export default function RouteList() {
       // ✅ Mark house as done (replace Snap with Done)
       setDoneHouseIds((prev) => [...prev, id]);
 
+      // Direct activity_log insert for better data consistency
+      await supabase.from("activity_log").insert([
+        {
+          event_type: "SNAP",
+          description: `Guard snapped photo at ${house_no}`,
+          guard_name: localStorage.getItem("guardName") || "Guard",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
       await fetchAssignments();
     } catch (err) {
       console.error("Upload error:", err);

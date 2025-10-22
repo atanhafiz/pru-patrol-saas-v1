@@ -154,6 +154,17 @@ ${googleLink}
         });
       
       await logEvent("INCIDENT", description, guardName);
+      
+      // Direct activity_log insert for better data consistency
+      await supabase.from("activity_log").insert([
+        {
+          event_type: "INCIDENT",
+          description: description || "No description provided",
+          guard_name: guardName || "Guard",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      
       resetForm();
       setStatus("✅ Incident submitted successfully!");
       setTimeout(() => setStatus(""), 3000);

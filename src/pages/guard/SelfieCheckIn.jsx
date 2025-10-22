@@ -90,6 +90,16 @@ export default function SelfieCheckIn_v11() {
       setStatus("✅ Attendance submitted successfully");
       await logEvent("CHECKIN", "Guard submitted selfie check-in", "Guard");
       
+      // Direct activity_log insert for better data consistency
+      await supabase.from("activity_log").insert([
+        {
+          event_type: selfieType === "IN" ? "SELFIE_IN" : "SELFIE_OUT",
+          description: `Guard submitted selfie check-${selfieType.toLowerCase()}`,
+          guard_name: localStorage.getItem("guardName") || "Guard",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      
       // Send Telegram alert
       try {
         const caption = `✅ Guard Attendance Check-In
