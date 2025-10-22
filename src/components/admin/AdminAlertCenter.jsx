@@ -8,11 +8,15 @@ export default function AdminAlertCenter() {
   const [alerts, setAlerts] = useState([]);
 
   const fetchAlerts = async () => {
+    console.log("🚨 ALERT-DEBUG: component mounted");
     const { data, error } = await supabase
       .from("incidents")
       .select("*")
-      .eq("status", "active")
+      .or('status.is.null,status.eq.active')
       .order("created_at", { ascending: false });
+    console.log("🚨 ALERT-DEBUG: fetched incidents", data);
+    console.log("🚨 ALERT-DEBUG: filter used", { status: "null OR active" });
+    if (error) console.error("🚨 ALERT-DEBUG: fetch error", error);
     if (!error && data) setAlerts(data);
   };
 
@@ -35,7 +39,10 @@ export default function AdminAlertCenter() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "incidents" },
-        (payload) => setAlerts((prev) => [payload.new, ...prev])
+        (payload) => {
+          console.log("🚨 ALERT-DEBUG: realtime triggered", payload);
+          setAlerts((prev) => [payload.new, ...prev]);
+        }
       )
       .subscribe();
     return () => supabase.removeChannel(channel);
