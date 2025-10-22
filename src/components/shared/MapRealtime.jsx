@@ -4,12 +4,16 @@ import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabaseClient";
 import "leaflet/dist/leaflet.css";
 
-// Global guard icon definition with .jpg image
-const guardIcon = L.icon({
-  iconUrl: "/images/guard-icon.jpg",
-  iconSize: [45, 45],
-  iconAnchor: [22, 45],
-  popupAnchor: [0, -45],
+// Fix broken default marker paths in Netlify/Vite
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
 export default function MapRealtime() {
@@ -19,9 +23,6 @@ export default function MapRealtime() {
   const routeCoordsRef = useRef([]);
   const [guards, setGuards] = useState([]);
   const markersRef = useRef(new Map()); // Store multiple markers by guard ID
-  
-  // Debug log for icon path
-  console.log("🛰️ MAP: using icon", guardIcon.options.iconUrl);
 
   useEffect(() => {
     // Initialize map with a small delay to ensure DOM is ready
@@ -58,14 +59,13 @@ export default function MapRealtime() {
           
           // Handle marker creation and updates
           if (!markerRef.current) {
-            markerRef.current = L.marker([lat, lng], { icon: guardIcon }).addTo(mapRef.current);
+            markerRef.current = L.marker([lat, lng]).addTo(mapRef.current);
             markerRef.current.bindPopup("Guard Active").openPopup();
             
-            // ✅ Auto-center map on first selfie-in
+            // ✅ Auto-center map to guard location
             mapRef.current.setView([lat, lng], 18, { animate: true });
             console.log("🛰️ MAP: marker created & map centered");
           } else {
-            // Update marker position on next coordinates
             markerRef.current.setLatLng([lat, lng]);
             console.log("🛰️ MAP: marker updated", { lat, lng });
           }
