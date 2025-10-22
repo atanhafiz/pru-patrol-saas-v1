@@ -6,13 +6,13 @@ import { supabase } from "./supabaseClient";
  * @param {string} description - keterangan ringkas
  * @param {string} userRole - role user (admin/guard)
  */
-export async function logEvent(type, description, userRole) {
+export async function logEvent(type, description, guardName) {
   try {
     const { error } = await supabase.from("activity_log").insert([
       {
-        type,
-        description,
-        user_role: userRole,
+        event_type: type,
+        description: description || "No description provided",
+        guard_name: guardName || localStorage.getItem("guardName") || "Unknown Guard",
         created_at: new Date().toISOString(),
       },
     ]);

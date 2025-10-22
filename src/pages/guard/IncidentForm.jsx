@@ -153,7 +153,7 @@ ${googleLink}
           console.error("❌ Telegram error:", err);
         });
       
-      await logEvent("INCIDENT", description, "Guard");
+      await logEvent("INCIDENT", description, guardName);
       resetForm();
       setStatus("✅ Incident submitted successfully!");
       setTimeout(() => setStatus(""), 3000);
