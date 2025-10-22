@@ -15,8 +15,6 @@ import {
 
 import MapRealtime from "../../components/shared/MapRealtime";
 import RouteAssignment from "../../components/admin/RouteAssignment";
-import AdminAlert from "../../components/admin/AdminAlert";
-import AdminAlertCenter from "../../components/admin/AdminAlertCenter";
 import RouteStatusAlert from "../../components/admin/RouteStatusAlert";
 
 // ✅ Import layout clean baru
@@ -241,7 +239,6 @@ export default function Dashboard() {
         <MapRealtime />
         <div className="my-6"></div>
         <RouteAssignment />
-        <AdminAlert />
         <RouteStatusAlert />
 
         {/* Activity Log */}
