@@ -100,9 +100,9 @@ export default function GuardDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-soft p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#f7faff] via-white to-[#edf3ff] p-4 sm:p-6">
       <motion.h1
-        className="text-3xl font-bold text-primary mb-8"
+        className="text-3xl font-bold text-[#0B132B] mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -111,7 +111,7 @@ export default function GuardDashboard() {
 
       {/* Summary cards */}
       <motion.div
-        className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8"
         initial="hidden"
         animate="visible"
         variants={{
@@ -126,14 +126,14 @@ export default function GuardDashboard() {
         {cards.map((c, i) => (
           <motion.div
             key={i}
-            className={`p-6 rounded-2xl text-white bg-gradient-to-br ${c.color} shadow-md hover:shadow-xl transition flex justify-between`}
-            whileHover={{ scale: 1.03 }}
+            className="bg-white/90 backdrop-blur-md border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-4 sm:p-6 flex justify-between"
+            whileHover={{ scale: 1.02 }}
           >
             <div>
-              <p className="text-sm opacity-80">{c.title}</p>
-              <h2 className="text-3xl font-extrabold">{c.value}</h2>
+              <p className="text-sm text-gray-500">{c.title}</p>
+              <h2 className="text-3xl font-bold text-[#0B132B] mt-1">{c.value}</h2>
             </div>
-            {c.icon}
+            {c.icon && <div className="opacity-70 w-6 h-6">{c.icon}</div>}
           </motion.div>
         ))}
       </motion.div>
@@ -141,13 +141,13 @@ export default function GuardDashboard() {
       {/* Last Check-In */}
       {lastCheck && (
         <motion.div
-          className="bg-white rounded-2xl shadow-md p-5 flex justify-between items-center mb-8"
+          className="bg-white/90 backdrop-blur-md border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-4 sm:p-6 flex justify-between items-center mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <div>
-            <h3 className="font-semibold text-primary">Last Check-In</h3>
-            <p className="text-sm text-gray-600 mt-1">
+            <h3 className="font-semibold text-[#0B132B]">Last Check-In</h3>
+            <p className="text-sm text-gray-500 mt-1">
               {new Date(lastCheck.created_at).toLocaleString()}
             </p>
             <p className="text-xs text-gray-400 mt-1">
@@ -157,19 +157,19 @@ export default function GuardDashboard() {
               Guard: {lastCheck.guard_name}
             </p>
           </div>
-          <Clock className="w-8 h-8 text-accent" />
+          <Clock className="w-8 h-8 text-accent opacity-70" />
         </motion.div>
       )}
 
       {/* Attendance History Chart */}
       {chartData.length > 0 && (
         <motion.div
-          className="bg-white rounded-2xl shadow-md p-6"
+          className="bg-white border border-gray-200 rounded-2xl shadow-md p-4 sm:p-6"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <h3 className="text-xl font-semibold text-primary mb-4">
+          <h3 className="text-xl font-semibold text-[#0B132B] mb-4">
             Total Attendance History (7 Days)
           </h3>
           <ResponsiveContainer width="100%" height={300}>

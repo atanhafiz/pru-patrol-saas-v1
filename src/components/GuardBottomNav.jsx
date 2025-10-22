@@ -11,7 +11,7 @@ export default function GuardBottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-2 z-50 shadow-sm">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-gray-100 flex justify-around py-2 z-50 shadow-sm">
       {navItems.map((item) => {
         const Icon = item.icon;
         const active = location.pathname === item.path;
@@ -25,18 +25,18 @@ export default function GuardBottomNav() {
             {/* highlight bar atas icon */}
             <div
               className={`absolute top-0 left-0 right-0 h-[3px] rounded-b-full transition-all duration-300 ${
-                active ? "bg-blue-500" : "bg-transparent"
+                active ? "bg-blue-600" : "bg-transparent"
               }`}
             ></div>
 
             <Icon
               className={`w-5 h-5 mb-0.5 transition-all ${
-                active ? "stroke-blue-500 scale-110" : "stroke-gray-400"
+                active ? "stroke-blue-600 scale-110" : "stroke-gray-400"
               }`}
             />
             <span
               className={`text-[11px] font-medium ${
-                active ? "text-blue-500" : "text-gray-500"
+                active ? "text-blue-600" : "text-gray-500"
               }`}
             >
               {item.label}

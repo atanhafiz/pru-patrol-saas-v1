@@ -164,24 +164,24 @@ export default function RouteList() {
   }, {});
 
   return (
-    <div className="p-5 space-y-5 pb-16">
-      <h1 className="text-2xl font-bold text-primary">Routes</h1>
+    <div className="min-h-screen bg-gradient-to-br from-[#f7faff] via-white to-[#edf3ff] p-4 sm:p-6 space-y-4 sm:space-y-6 pb-16">
+      <h1 className="text-2xl font-bold text-[#0B132B]">Routes</h1>
 
       {/* REGISTER FORM */}
       {!registered && (
-        <div className="bg-white p-4 rounded-xl shadow max-w-md mb-4">
-          <h3 className="font-semibold mb-2">Register Guard</h3>
+        <div className="bg-white/90 backdrop-blur-md border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 p-4 sm:p-6 max-w-md mb-4">
+          <h3 className="font-semibold text-[#0B132B] mb-2">Register Guard</h3>
           <input
             placeholder="Guard Name"
             value={guardName}
             onChange={(e) => setGuardName(e.target.value)}
-            className="border p-2 rounded w-full mb-2"
+            className="border border-gray-200 p-3 rounded-xl w-full mb-3 focus:ring-2 focus:ring-blue-500"
           />
           <input
             placeholder="Plate Number"
             value={plateNo}
             onChange={(e) => setPlateNo(e.target.value)}
-            className="border p-2 rounded w-full mb-3"
+            className="border border-gray-200 p-3 rounded-xl w-full mb-4 focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={() => {
@@ -192,7 +192,7 @@ export default function RouteList() {
               localStorage.setItem("registered", "true");
               toast.success("✅ Registered");
             }}
-            className="bg-accent text-white px-4 py-2 rounded w-full"
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-xl w-full shadow-md hover:shadow-lg transition"
           >
             Save
           </button>
@@ -202,23 +202,23 @@ export default function RouteList() {
       {registered && (
         <>
           {/* Selfie Buttons */}
-          <div className="flex gap-2 mb-2">
+          <div className="flex gap-2 mb-4">
             <button
               onClick={() => openSelfie("selfieIn")}
-              className="bg-green-500 text-white px-4 py-2 rounded flex items-center gap-2"
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition"
             >
               <Camera className="w-4 h-4" /> Selfie IN
             </button>
             <button
               onClick={() => openSelfie("selfieOut")}
-              className="bg-red-500 text-white px-4 py-2 rounded flex items-center gap-2"
+              className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 shadow-md hover:shadow-lg transition"
             >
               <Camera className="w-4 h-4" /> Selfie OUT
             </button>
           </div>
 
           {/* Map Section */}
-          <div className="h-[360px] w-full rounded-xl overflow-hidden shadow relative z-0">
+          <div className="h-[360px] w-full rounded-2xl overflow-hidden shadow-md border border-gray-200 bg-white relative z-0">
             <MapContainer
               center={guardPos || [5.65, 100.5]}
               zoom={16}
@@ -269,18 +269,18 @@ export default function RouteList() {
           </div>
 
           {/* List by Session */}
-          <div className="bg-white mt-3 p-3 rounded-lg shadow text-sm">
-            <h3 className="font-semibold mb-2">🏠 Assigned Houses</h3>
+          <div className="bg-white/90 backdrop-blur-md border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 mt-4 p-4 sm:p-6 text-sm">
+            <h3 className="font-semibold text-[#0B132B] mb-3">🏠 Assigned Houses</h3>
             {Object.keys(groupedAssignments).map((session) => (
               <div key={session} className="mb-3">
-                <h4 className="font-semibold text-accent mb-1">
+                <h4 className="font-semibold text-[#0B132B] mb-2">
                   Session {session}
                 </h4>
-                <ul className="space-y-1">
+                <ul className="space-y-2">
                   {groupedAssignments[session].map((a) => (
                     <li
                       key={a.id}
-                      className="flex justify-between items-center bg-gray-50 p-2 rounded"
+                      className="flex justify-between items-center bg-gray-50 p-3 rounded-xl"
                     >
                       <span>
                         {a.house_no} {a.street_name} ({a.block})
@@ -288,12 +288,12 @@ export default function RouteList() {
                       {doneHouseIds.includes(a.id) ? (
                         <button
                           disabled
-                          className="bg-green-500 text-white rounded px-2 py-1 text-xs cursor-default"
+                          className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg px-3 py-1 text-xs cursor-default"
                         >
                           ✅ Done
                         </button>
                       ) : (
-                        <label className="bg-blue-500 text-white rounded px-2 py-1 text-xs cursor-pointer">
+                        <label className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg px-3 py-1 text-xs cursor-pointer shadow-sm hover:shadow-md transition">
                           <input
                             type="file"
                             accept="image/*"
