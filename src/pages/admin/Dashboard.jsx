@@ -61,9 +61,14 @@ export default function Dashboard() {
     const { data, error } = await supabase
       .from("activity_log")
       .select("*")
-      .order("time", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(50);
-    if (!error) setActivityLogs(data || []);
+    if (!error) {
+      setActivityLogs(data || []);
+      console.log("✅ Supabase activity_log fetched:", data?.length);
+    } else {
+      console.error("❌ Supabase activity_log error:", error.message);
+    }
   };
 
   const fetchAssignments = async () => {
@@ -91,16 +96,26 @@ export default function Dashboard() {
         .eq("status", "pending");
       setActivePatrols(patrolsCount || 0);
 
-      const { count: reportsCount } = await supabase
+      const { count: reportsCount, error: reportsError } = await supabase
         .from("incidents")
         .select("*", { count: "exact" })
         .eq("status", "active");
+      if (reportsError) {
+        console.error("❌ Supabase incidents (active) error:", reportsError.message);
+      } else {
+        console.log("✅ Supabase incidents (active) fetched:", reportsCount);
+      }
       setPendingReports(reportsCount || 0);
 
-      const { count: incidentsCount } = await supabase
+      const { count: incidentsCount, error: incidentsError } = await supabase
         .from("incidents")
         .select("*", { count: "exact" })
         .gte("created_at", startOfDay);
+      if (incidentsError) {
+        console.error("❌ Supabase incidents (today) error:", incidentsError.message);
+      } else {
+        console.log("✅ Supabase incidents (today) fetched:", incidentsCount);
+      }
       setIncidentsToday(incidentsCount || 0);
     } catch (err) {
       console.error("Error fetching dashboard metrics:", err);

@@ -37,8 +37,9 @@ export default function AdminIncident() {
     console.log("🚨 ALERT-DEBUG: AdminIncident filter used", { no_status_filter: true });
     console.log("🚨 ALERT-DEBUG: mismatch detected - AdminIncident uses no status filter but AlertCenter uses .eq('status','active')");
     if (error) {
-      console.error("🚨 ALERT-DEBUG: AdminIncident fetch error", error.message);
+      console.error("❌ Supabase incidents error:", error.message);
     } else {
+      console.log("✅ Supabase incidents fetched:", data?.length);
       setIncidents(data || []);
     }
     setLoading(false);
