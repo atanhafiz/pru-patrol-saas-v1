@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 
 import MapRealtime from "../../components/shared/MapRealtime";
-import ReportFeed from "../../components/admin/ReportFeed";
 import RouteAssignment from "../../components/admin/RouteAssignment";
 import AdminAlert from "../../components/admin/AdminAlert";
 import AdminAlertCenter from "../../components/admin/AdminAlertCenter";
@@ -240,7 +239,7 @@ export default function Dashboard() {
 
         {/* Core Modules */}
         <MapRealtime />
-        <ReportFeed />
+        <div className="my-6"></div>
         <RouteAssignment />
         <AdminAlert />
         <RouteStatusAlert />
