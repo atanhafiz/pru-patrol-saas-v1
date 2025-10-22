@@ -24,6 +24,7 @@ export default function MapRealtime() {
   const [guards, setGuards] = useState([]);
   const markersRef = useRef(new Map()); // Store multiple markers by guard ID
   const prevPositionRef = useRef(null); // Store previous position for speed calculation
+  const subscribedRef = useRef(false); // Prevent multiple subscriptions
 
   useEffect(() => {
     // Initialize map with a small delay to ensure DOM is ready
@@ -45,116 +46,130 @@ export default function MapRealtime() {
     // Initialize map immediately or with a small delay
     setTimeout(initMap, 100);
 
-    // Subscribe to real-time location updates
-    const channel = supabase
-      .channel("guard_location")
-      .on("broadcast", { event: "location_update" }, ({ payload }) => {
-        console.log("🛰️ MAP: incoming payload", payload);
-        
-        if (!mapRef.current) return; // prevent calling before map is ready
-        
-        const { lat, lng, id, name, status } = payload;
-        
-        if (lat && lng) {
-          console.log("🛰️ MAP: new position", { lat, lng, id });
-          
-          // Handle marker creation and updates
-          if (!markerRef.current) {
-            markerRef.current = L.marker([lat, lng]).addTo(mapRef.current);
-            markerRef.current.bindPopup("Guard Active").openPopup();
+    // Subscribe to real-time location updates with auto-reconnect
+    if (!subscribedRef.current) {
+      subscribedRef.current = true;
+      
+      const subscribeToGuardChannel = () => {
+        console.log("🛰️ MAP: subscribing guard_location...");
+        const channel = supabase
+          .channel("guard_location")
+          .on("broadcast", { event: "location_update" }, ({ payload }) => {
+            console.log("🛰️ MAP: incoming payload", payload);
             
-            // ✅ Auto-center map to guard location
-            mapRef.current.setView([lat, lng], 18, { animate: true });
-            console.log("🛰️ MAP: marker created & map centered");
-          } else {
-            markerRef.current.setLatLng([lat, lng]);
-            console.log("🛰️ MAP: marker updated", { lat, lng });
-          }
-          
-          // Add to route coordinates
-          routeCoordsRef.current.push([lat, lng]);
-          console.log("🛰️ MAP: route points", routeCoordsRef.current.length);
-          
-          // Calculate speed if we have previous position
-          let speedKmh = 0;
-          if (prevPositionRef.current) {
-            const prevPos = prevPositionRef.current;
-            const distance = L.latLng(prevPos.lat, prevPos.lng).distanceTo(L.latLng(lat, lng));
-            const timeDiff = (Date.now() - prevPos.timestamp) / 1000; // seconds
-            if (timeDiff > 0) {
-              speedKmh = Math.abs(distance / timeDiff) * 3.6; // Convert m/s to km/h
-            }
-          }
-          
-          // Store current position for next calculation
-          prevPositionRef.current = { lat, lng, timestamp: Date.now() };
-          
-          // Update or create polyline with error handling
-          if (routeCoordsRef.current.length > 1) {
-            if (polylineRef.current) {
-              try {
-                polylineRef.current.setLatLngs(routeCoordsRef.current);
+            if (!mapRef.current) return; // prevent calling before map is ready
+            
+            const { lat, lng, id, name, status } = payload;
+            
+            if (lat && lng) {
+              console.log("🛰️ MAP: new position", { lat, lng, id });
+              
+              // Handle marker creation and updates
+              if (!markerRef.current) {
+                markerRef.current = L.marker([lat, lng]).addTo(mapRef.current);
+                markerRef.current.bindPopup("Guard Active").openPopup();
                 
-                // Update polyline color based on speed
-                let color = "green";
-                if (speedKmh >= 10 && speedKmh < 40) color = "orange";
-                else if (speedKmh >= 40) color = "red";
-                
-                polylineRef.current.setStyle({ color });
-                console.log("🛰️ MAP: polyline updated with", routeCoordsRef.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", color);
-              } catch (e) {
-                console.warn("⚠️ Polyline update skipped (map still animating)");
+                // ✅ Auto-center map to guard location
+                mapRef.current.setView([lat, lng], 18, { animate: true });
+                console.log("🛰️ MAP: marker created & map centered");
+              } else {
+                markerRef.current.setLatLng([lat, lng]);
+                console.log("🛰️ MAP: marker updated", { lat, lng });
               }
-            } else {
-              // Calculate speed-based color for new polyline
-              let color = "green";
-              if (speedKmh >= 10 && speedKmh < 40) color = "orange";
-              else if (speedKmh >= 40) color = "red";
               
-              polylineRef.current = L.polyline(routeCoordsRef.current, {
-                color: color,
-                weight: 5,
-                opacity: 0.8,
-              }).addTo(mapRef.current);
+              // Add to route coordinates
+              routeCoordsRef.current.push([lat, lng]);
+              console.log("🛰️ MAP: route points", routeCoordsRef.current.length);
               
-              console.log("🛰️ MAP: polyline created with", routeCoordsRef.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", color);
+              // Calculate speed if we have previous position
+              let speedKmh = 0;
+              if (prevPositionRef.current) {
+                const prevPos = prevPositionRef.current;
+                const distance = L.latLng(prevPos.lat, prevPos.lng).distanceTo(L.latLng(lat, lng));
+                const timeDiff = (Date.now() - prevPos.timestamp) / 1000; // seconds
+                if (timeDiff > 0) {
+                  speedKmh = Math.abs(distance / timeDiff) * 3.6; // Convert m/s to km/h
+                }
+              }
+              
+              // Store current position for next calculation
+              prevPositionRef.current = { lat, lng, timestamp: Date.now() };
+              
+              // Update or create polyline with error handling
+              if (routeCoordsRef.current.length > 1) {
+                if (polylineRef.current) {
+                  try {
+                    polylineRef.current.setLatLngs(routeCoordsRef.current);
+                    
+                    // Update polyline color based on speed
+                    let color = "green";
+                    if (speedKmh >= 10 && speedKmh < 40) color = "orange";
+                    else if (speedKmh >= 40) color = "red";
+                    
+                    polylineRef.current.setStyle({ color });
+                    console.log("🛰️ MAP: polyline updated with", routeCoordsRef.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", color);
+                  } catch (e) {
+                    console.warn("⚠️ Polyline update skipped (map still animating)");
+                  }
+                } else {
+                  // Calculate speed-based color for new polyline
+                  let color = "green";
+                  if (speedKmh >= 10 && speedKmh < 40) color = "orange";
+                  else if (speedKmh >= 40) color = "red";
+                  
+                  polylineRef.current = L.polyline(routeCoordsRef.current, {
+                    color: color,
+                    weight: 5,
+                    opacity: 0.8,
+                  }).addTo(mapRef.current);
+                  
+                  console.log("🛰️ MAP: polyline created with", routeCoordsRef.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", color);
+                }
+              }
             }
-          }
-        }
-        
-        // Update guards state
-        setGuards(prev => 
-          prev.map(g => 
-            g.id === id 
-              ? { ...g, lat, lng, name, status }
-              : g
-          )
-        );
-      })
-      .subscribe();
-    
-    console.log("🛰️ MAP: channel subscribed guard_location");
+            
+            // Update guards state
+            setGuards(prev => 
+              prev.map(g => 
+                g.id === id 
+                  ? { ...g, lat, lng, name, status }
+                  : g
+              )
+            );
+          })
+          .subscribe((status) => {
+            if (status === "CLOSED") {
+              console.warn("⚠️ MAP channel closed — retrying in 3s...");
+              setTimeout(subscribeToGuardChannel, 3000);
+            }
+          });
+        return channel;
+      };
 
-    // Cleanup on unmount
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-      // Clean up single marker
-      if (markerRef.current) {
-        mapRef.current?.removeLayer(markerRef.current);
-        markerRef.current = null;
-      }
-      // Clean up all markers from Map
-      markersRef.current.forEach(marker => {
-        if (marker) mapRef.current?.removeLayer(marker);
-      });
-      markersRef.current.clear();
-      polylineRef.current = null;
-      routeCoordsRef.current = [];
-      supabase.removeChannel(channel);
-    };
+      const channel = subscribeToGuardChannel();
+      
+      // Cleanup on unmount
+      return () => {
+        if (mapRef.current) {
+          mapRef.current.remove();
+          mapRef.current = null;
+        }
+        // Clean up single marker
+        if (markerRef.current) {
+          mapRef.current?.removeLayer(markerRef.current);
+          markerRef.current = null;
+        }
+        // Clean up all markers from Map
+        markersRef.current.forEach(marker => {
+          if (marker) mapRef.current?.removeLayer(marker);
+        });
+        markersRef.current.clear();
+        polylineRef.current = null;
+        routeCoordsRef.current = [];
+        supabase.removeChannel(channel);
+        subscribedRef.current = false;
+      };
+    }
   }, []);
 
   return (

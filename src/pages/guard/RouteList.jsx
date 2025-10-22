@@ -255,14 +255,19 @@ export default function RouteList() {
       setDoneHouseIds((prev) => [...prev, id]);
 
       // Direct activity_log insert for better data consistency
-      await supabase.from("activity_log").insert([
-        {
-          event_type: "SNAP",
-          description: `Guard snapped photo at ${house_no}`,
-          guard_name: localStorage.getItem("guardName") || "Guard",
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      supabase
+        .from("activity_log")
+        .insert([
+          {
+            event_type: "SNAP",
+            description: `Guard snapped photo at ${house_no}`,
+            guard_name: localStorage.getItem("guardName") || "Guard",
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .then(({ error }) => {
+          if (error) console.warn("⚠️ Activity log insert failed:", error.message);
+        });
 
       await fetchAssignments();
     } catch (err) {

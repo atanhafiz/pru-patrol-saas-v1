@@ -156,14 +156,19 @@ ${googleLink}
       await logEvent("INCIDENT", description, guardName);
       
       // Direct activity_log insert for better data consistency
-      await supabase.from("activity_log").insert([
-        {
-          event_type: "INCIDENT",
-          description: description || "No description provided",
-          guard_name: guardName || "Guard",
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      supabase
+        .from("activity_log")
+        .insert([
+          {
+            event_type: "INCIDENT",
+            description: description || "No description provided",
+            guard_name: guardName || localStorage.getItem("guardName") || "Guard",
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .then(({ error }) => {
+          if (error) console.warn("⚠️ Activity log insert failed:", error.message);
+        });
       
       resetForm();
       setStatus("✅ Incident submitted successfully!");

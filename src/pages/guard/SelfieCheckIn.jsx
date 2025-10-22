@@ -91,14 +91,19 @@ export default function SelfieCheckIn_v11() {
       await logEvent("CHECKIN", "Guard submitted selfie check-in", "Guard");
       
       // Direct activity_log insert for better data consistency
-      await supabase.from("activity_log").insert([
-        {
-          event_type: selfieType === "IN" ? "SELFIE_IN" : "SELFIE_OUT",
-          description: `Guard submitted selfie check-${selfieType.toLowerCase()}`,
-          guard_name: localStorage.getItem("guardName") || "Guard",
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      supabase
+        .from("activity_log")
+        .insert([
+          {
+            event_type: "SELFIE_IN",
+            description: `Guard submitted selfie in`,
+            guard_name: localStorage.getItem("guardName") || "Guard",
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .then(({ error }) => {
+          if (error) console.warn("⚠️ Activity log insert failed:", error.message);
+        });
       
       // Send Telegram alert
       try {
