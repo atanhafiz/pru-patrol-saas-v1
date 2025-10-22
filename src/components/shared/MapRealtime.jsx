@@ -168,8 +168,35 @@ export default function MapRealtime() {
         <h3 className="text-lg font-semibold text-[#0B132B]">🗺️ Live Guard Tracking</h3>
         <p className="text-xs text-gray-500">Last update: just now</p>
       </div>
-      <div className="h-[420px] w-full">
+      <div className="h-[420px] w-full relative">
         <div id="map-container" className="h-full w-full z-0"></div>
+        
+        {/* Speed Legend */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-gray-200 rounded-xl shadow-md px-3 py-2 flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-700 max-w-[90%]"
+        >
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-2 sm:w-4 sm:h-2 rounded-sm bg-green-500"></span>
+            <span className="hidden sm:inline">Normal</span>
+            <span className="sm:hidden">N</span>
+            <span className="text-xs text-gray-500 hidden sm:inline">&lt;10km/h</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-2 sm:w-4 sm:h-2 rounded-sm bg-orange-500"></span>
+            <span className="hidden sm:inline">Moderate</span>
+            <span className="sm:hidden">M</span>
+            <span className="text-xs text-gray-500 hidden sm:inline">10-40km/h</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3 h-2 sm:w-4 sm:h-2 rounded-sm bg-red-500"></span>
+            <span className="hidden sm:inline">High Speed</span>
+            <span className="sm:hidden">H</span>
+            <span className="text-xs text-gray-500 hidden sm:inline">&gt;40km/h</span>
+          </div>
+        </motion.div>
       </div>
     </motion.div>
   );
