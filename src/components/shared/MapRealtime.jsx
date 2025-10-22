@@ -83,7 +83,9 @@ export default function MapRealtime() {
           if (routeCoordsRef.current.length > 1) {
             // Calculate speed-based color (if speed is available in payload)
             const speed = payload.speed || 0;
-            const color = speed < 10 ? "green" : speed < 40 ? "orange" : "red";
+            let color = "green";
+            if (speed >= 10 && speed < 40) color = "orange";
+            else if (speed >= 40) color = "red";
             
             polylineRef.current = L.polyline(routeCoordsRef.current, {
               color: color,
