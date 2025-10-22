@@ -1,38 +1,124 @@
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabaseClient";
 import "leaflet/dist/leaflet.css";
 
-const guardIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/3061/3061285.png",
-  iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -30],
+// Global guard icon definition with fallback
+const guardIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/3061/3061285.png", // fallback icon
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
 });
 
 export default function MapRealtime() {
-  const [guards, setGuards] = useState([
-    { id: 1, name: "", lat: 5.648, lng: 100.486, status: "Patrolling" },
-    { id: 2, name: "", lat: 5.646, lng: 100.482, status: "On Standby" },
-  ]);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+  const polylineRef = useRef(null);
+  const routeCoordsRef = useRef([]);
+  const [guards, setGuards] = useState([]);
+  const markersRef = useRef(new Map()); // Store multiple markers by guard ID
 
   useEffect(() => {
+    // Initialize map with a small delay to ensure DOM is ready
+    const initMap = () => {
+      if (!mapRef.current) {
+        const mapContainer = document.getElementById('map-container');
+        if (mapContainer) {
+          mapRef.current = L.map('map-container').setView([5.648, 100.485], 15);
+          
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+          }).addTo(mapRef.current);
+          
+          console.log("🛰️ MAP: map ready, updating markers/polylines");
+        }
+      }
+    };
+    
+    // Initialize map immediately or with a small delay
+    setTimeout(initMap, 100);
+
+    // Subscribe to real-time location updates
     const channel = supabase
       .channel("guard_location")
       .on("broadcast", { event: "location_update" }, ({ payload }) => {
-        setGuards((prev) =>
-          prev.map((g) =>
-            g.id === payload.id
-              ? { ...g, lat: payload.lat, lng: payload.lng }
+        console.log("🛰️ MAP: received location update", payload);
+        
+        if (!mapRef.current) return; // prevent calling before map is ready
+        
+        const { lat, lng, id, name, status } = payload;
+        
+        if (lat && lng) {
+          console.log("🛰️ MAP: new position", { lat, lng, id });
+          
+          // Handle marker for this specific guard
+          const existingMarker = markersRef.current.get(id);
+          if (existingMarker) {
+            existingMarker.setLatLng([lat, lng]);
+          } else {
+            const newMarker = L.marker([lat, lng], { icon: guardIcon })
+              .addTo(mapRef.current)
+              .bindPopup(`
+                <div className="text-center">
+                  <h2 className="font-bold text-primary">${name || 'Guard'}</h2>
+                  <p className="text-sm">${status || 'Patrolling'}</p>
+                </div>
+              `);
+            markersRef.current.set(id, newMarker);
+          }
+          
+          // Add to route coordinates
+          routeCoordsRef.current.push([lat, lng]);
+          console.log("🛰️ MAP: route points", routeCoordsRef.current.length);
+          
+          // Remove old polyline before drawing new
+          if (polylineRef.current) {
+            mapRef.current.removeLayer(polylineRef.current);
+          }
+          
+          // Draw new polyline with route
+          if (routeCoordsRef.current.length > 1) {
+            // Calculate speed-based color (if speed is available in payload)
+            const speed = payload.speed || 0;
+            const color = speed < 10 ? "green" : speed < 40 ? "orange" : "red";
+            
+            polylineRef.current = L.polyline(routeCoordsRef.current, {
+              color: color,
+              weight: 5,
+              opacity: 0.8,
+            }).addTo(mapRef.current);
+            
+            console.log("🛰️ MAP: polyline updated with", routeCoordsRef.current.length, "points, color:", color);
+          }
+        }
+        
+        // Update guards state
+        setGuards(prev => 
+          prev.map(g => 
+            g.id === id 
+              ? { ...g, lat, lng, name, status }
               : g
           )
         );
       })
       .subscribe();
 
+    // Cleanup on unmount
     return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+      // Clean up all markers
+      markersRef.current.forEach(marker => {
+        if (marker) mapRef.current?.removeLayer(marker);
+      });
+      markersRef.current.clear();
+      markerRef.current = null;
+      polylineRef.current = null;
+      routeCoordsRef.current = [];
       supabase.removeChannel(channel);
     };
   }, []);
@@ -49,31 +135,7 @@ export default function MapRealtime() {
         <p className="text-xs text-gray-500">Last update: just now</p>
       </div>
       <div className="h-[420px] w-full">
-        <MapContainer
-          center={[5.648, 100.485]}
-          zoom={15}
-          scrollWheelZoom={true}
-          className="h-full w-full z-0"
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="© OpenStreetMap"
-          />
-          {guards.map((guard) => (
-            <Marker
-              key={guard.id}
-              position={[guard.lat, guard.lng]}
-              icon={guardIcon}
-            >
-              <Popup>
-                <div className="text-center">
-                  <h2 className="font-bold text-primary">{guard.name}</h2>
-                  <p className="text-sm">{guard.status}</p>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
+        <div id="map-container" className="h-full w-full z-0"></div>
       </div>
     </motion.div>
   );
