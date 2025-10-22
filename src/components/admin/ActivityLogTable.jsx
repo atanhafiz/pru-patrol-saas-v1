@@ -35,14 +35,24 @@ export default function ActivityLogTable() {
     if (!logs.length) return;
     const header = "Event Type,Description,Guard,Time\n";
     const rows = logs
-      .map((l) =>
-        [
-          l.event_type,
-          `"${l.description?.replace(/"/g, '""')}"`,
-          l.guard_name,
-          new Date(l.created_at).toLocaleString(),
-        ].join(",")
-      )
+      .map((l) => {
+        const formattedDate = l.created_at
+          ? new Date(l.created_at).toLocaleString("en-MY", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—";
+        
+        return [
+          l.event_type || "—",
+          `"${(l.description || "—").replace(/"/g, '""')}"`,
+          l.guard_name || l.guard || "Unknown",
+          formattedDate,
+        ].join(",");
+      })
       .join("\n");
     const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -109,17 +119,31 @@ export default function ActivityLogTable() {
             </tr>
           </thead>
           <tbody>
-            {logs.map((l) => (
-              <tr key={l.id} className="border-b hover:bg-gray-50 transition">
-                <td className="p-3 font-semibold text-primary">{l.event_type}</td>
-                <td className="p-3 text-gray-600">{l.description}</td>
-                <td className="p-3">{l.guard_name}</td>
-                <td className="p-3 flex items-center gap-1 text-xs text-gray-400">
-                  <Clock className="w-3 h-3" />
-                  {new Date(l.created_at).toLocaleString()}
-                </td>
-              </tr>
-            ))}
+            {logs.map((l) => {
+              const formattedDate = l.created_at
+                ? new Date(l.created_at).toLocaleString("en-MY", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "—";
+
+              return (
+                <tr key={l.id} className="border-b hover:bg-gray-50 transition">
+                  <td className="p-3 font-semibold text-primary">{l.event_type || "—"}</td>
+                  <td className="p-3 text-gray-600">{l.description || "—"}</td>
+                  <td className="p-3 text-gray-700 font-medium">
+                    {l.guard_name || l.guard || "Unknown"}
+                  </td>
+                  <td className="p-3 flex items-center gap-1 text-xs text-gray-500">
+                    <Clock className="w-3 h-3" />
+                    {formattedDate}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
