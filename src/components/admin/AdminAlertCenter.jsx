@@ -9,15 +9,33 @@ export default function AdminAlertCenter() {
 
   const fetchAlerts = async () => {
     console.log("🚨 ALERT-DEBUG: component mounted");
-    const { data, error } = await supabase
-      .from("incidents")
-      .select("*")
-      .or('status.is.null,status.eq.active')
-      .order("created_at", { ascending: false });
-    console.log("🚨 ALERT-DEBUG: fetched incidents", data);
-    console.log("🚨 ALERT-DEBUG: filter used", { status: "null OR active" });
-    if (error) console.error("🚨 ALERT-DEBUG: fetch error", error);
-    if (!error && data) setAlerts(data);
+    
+    let incidents = [];
+    try {
+      const { data: incidentsNull, error: errNull } = await supabase
+        .from("incidents")
+        .select("*")
+        .is("status", null)
+        .order("created_at", { ascending: false });
+      if (errNull) console.error("🚨 ALERT-REALTIME: fetch null error", errNull);
+
+      const { data: incidentsActive, error: errActive } = await supabase
+        .from("incidents")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+      if (errActive) console.error("🚨 ALERT-REALTIME: fetch active error", errActive);
+
+      incidents = [
+        ...(incidentsNull || []),
+        ...(incidentsActive || [])
+      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      console.log("🚨 ALERT-REALTIME: combined incidents", incidents.length);
+      setAlerts(incidents);
+    } catch (e) {
+      console.error("🚨 ALERT-REALTIME: fetch exception", e);
+    }
   };
 
   useEffect(() => {
@@ -45,8 +63,7 @@ export default function AdminAlertCenter() {
       "postgres_changes",
       { event: "INSERT", schema: "public", table: "incidents" },
       (payload) => {
-        console.log("🚨 ALERT-REALTIME: event received", payload);
-        console.log("🚨 ALERT-REALTIME: updating state with new incident", payload.new);
+        console.log("🚨 ALERT-REALTIME: incident received", payload.new);
         setAlerts((prev) => {
           const newList = [payload.new, ...prev];
           console.log("🚨 ALERT-REALTIME: old length", prev.length, "new length", newList.length);
