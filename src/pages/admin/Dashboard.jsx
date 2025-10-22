@@ -20,17 +20,6 @@ import RouteStatusAlert from "../../components/admin/RouteStatusAlert";
 // ✅ Import layout clean baru
 import AdminLayout_Clean from "../../layouts/AdminLayout_Clean";
 
-function LiveGuardMapButton() {
-  return (
-    <Link
-      to="/admin/map"
-      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow transition"
-    >
-      <MapPin className="w-4 h-4" />
-      Live Guard Tracking Map
-    </Link>
-  );
-}
 
 export default function Dashboard() {
   const [activityLogs, setActivityLogs] = useState([]);
@@ -217,13 +206,6 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-4 mb-6">
-          <Link
-            to="/admin/map"
-            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition"
-          >
-            <MapPin className="w-4 h-4" />
-            Live Guard Tracking Map
-          </Link>
           <Link
             to="/admin/incidents"
             className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition"

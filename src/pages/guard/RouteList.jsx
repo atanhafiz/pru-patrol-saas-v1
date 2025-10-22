@@ -4,10 +4,24 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { sendTelegramPhoto } from "../../shared/api/telegram";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { Camera, Loader2 } from "lucide-react";
 import GuardBottomNav from "../../components/GuardBottomNav";
 import toast from "react-hot-toast";
+
+// Component to handle map centering
+function MapCenter({ center, zoom }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (center && center[0] && center[1]) {
+      map.setView(center, zoom || 17, { animate: true });
+      console.log("📍 Guard location centered:", center[0], center[1]);
+    }
+  }, [center, zoom, map]);
+  
+  return null;
+}
 
 export default function RouteList() {
   const [assignments, setAssignments] = useState([]);
@@ -256,6 +270,7 @@ export default function RouteList() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; OpenStreetMap"
               />
+              <MapCenter center={guardPos} zoom={17} />
               {guardPos && (
                 <Marker position={guardPos}>
                   <Popup>

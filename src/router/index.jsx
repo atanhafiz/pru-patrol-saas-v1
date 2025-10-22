@@ -3,7 +3,6 @@ import { useAuth } from "../context/AuthContext";
 import AdminLayout from "../layouts/AdminLayout";
 import GuardLayout from "../layouts/GuardLayout";
 import AdminDashboard from "../pages/admin/Dashboard";
-import AdminMap from "../pages/admin/AdminMap";
 import AttendanceHistoryMap from "../pages/admin/AttendanceHistoryMap";
 import AdminIncident from "../pages/admin/AdminIncident";
 import GuardDashboard from "../pages/guard/Dashboard";
@@ -35,7 +34,6 @@ export default function AppRouter() {
   <>
     <Route path="/admin" element={<AdminDashboard />} />
     <Route path="/admin/dashboard" element={<AdminDashboard />} />
-    <Route path="/admin/map" element={<AdminMap />} />
     <Route path="/admin/attendance-history" element={<AttendanceHistoryMap />} />
     <Route path="/admin/attendance-map" element={<AttendanceHistoryMap />} />
     <Route path="/admin/incidents" element={<AdminIncident />} />
