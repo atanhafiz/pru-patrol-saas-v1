@@ -15,8 +15,13 @@ function MapCenter({ center, zoom }) {
   
   useEffect(() => {
     if (center && center[0] && center[1]) {
-      map.setView(center, zoom || 17, { animate: true });
-      console.log("📍 Guard location centered:", center[0], center[1]);
+      const zoomLevel = zoom || 18;
+      map.flyTo(center, zoomLevel, {
+        animate: true,
+        duration: 1.5, // smooth transition ~1.5s
+        easeLinearity: 0.25,
+      });
+      console.log("🌀 flyTo animation:", center[0], center[1]);
     }
   }, [center, zoom, map]);
   
@@ -270,11 +275,21 @@ export default function RouteList() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; OpenStreetMap"
               />
-              <MapCenter center={guardPos} zoom={17} />
+              <MapCenter center={guardPos} zoom={18} />
               {guardPos && (
-                <Marker position={guardPos}>
+                <Marker 
+                  position={guardPos}
+                  eventHandlers={{
+                    add: (e) => {
+                      // Highlight marker when added
+                      e.target.setZIndexOffset(1000);
+                      e.target.bindPopup(`<b>${guardName || "Guard Active"}</b>`).openPopup();
+                    }
+                  }}
+                >
                   <Popup>
-                    {guardName} ({plateNo})
+                    <b>{guardName || "Guard Active"}</b><br/>
+                    {plateNo && `Plate: ${plateNo}`}
                   </Popup>
                 </Marker>
               )}
