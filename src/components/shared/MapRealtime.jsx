@@ -25,11 +25,14 @@ export default function MapRealtime() {
   const markersRef = useRef(new Map()); // Store multiple markers by guard ID
   const prevPositionRef = useRef(null); // Store previous position for speed calculation
   const subscribedRef = useRef(false); // Prevent multiple subscriptions
+  const mountedRef = useRef(true); // Prevent operations on unmounted component
 
   useEffect(() => {
+    mountedRef.current = true;
+    
     // Initialize map with a small delay to ensure DOM is ready
     const initMap = () => {
-      if (!mapRef.current) {
+      if (!mapRef.current && mountedRef.current) {
         const mapContainer = document.getElementById('map-container');
         if (mapContainer) {
           mapRef.current = L.map('map-container').setView([5.648, 100.485], 15);
@@ -38,7 +41,7 @@ export default function MapRealtime() {
             attribution: '© OpenStreetMap'
           }).addTo(mapRef.current);
           
-          console.log("🛰️ MAP: map ready, updating markers/polylines");
+          console.log("🗺️ MAP: initialized");
         }
       }
     };
@@ -150,18 +153,31 @@ export default function MapRealtime() {
       
       // Cleanup on unmount
       return () => {
-        if (mapRef.current) {
-          mapRef.current.remove();
-          mapRef.current = null;
+        mountedRef.current = false;
+        try {
+          if (mapRef.current && mapRef.current.remove) {
+            mapRef.current.remove();
+            console.log("🧹 Map removed safely");
+          }
+        } catch (err) {
+          console.warn("🧹 Cleanup skipped:", err.message);
         }
         // Clean up single marker
         if (markerRef.current) {
-          mapRef.current?.removeLayer(markerRef.current);
-          markerRef.current = null;
+          try {
+            mapRef.current?.removeLayer(markerRef.current);
+            markerRef.current = null;
+          } catch (err) {
+            console.warn("🧹 Marker cleanup skipped:", err.message);
+          }
         }
         // Clean up all markers from Map
         markersRef.current.forEach(marker => {
-          if (marker) mapRef.current?.removeLayer(marker);
+          try {
+            if (marker) mapRef.current?.removeLayer(marker);
+          } catch (err) {
+            console.warn("🧹 Marker cleanup skipped:", err.message);
+          }
         });
         markersRef.current.clear();
         polylineRef.current = null;

@@ -118,6 +118,18 @@ export default function RouteList() {
     };
   }, [guardName]);
 
+  // Safe marker/polyline cleanup
+  useEffect(() => {
+    return () => {
+      try {
+        if (polylineRef.current) polylineRef.current.remove();
+        console.log("🧹 Route markers cleaned safely");
+      } catch (err) {
+        console.warn("🧹 Route cleanup skipped:", err.message);
+      }
+    };
+  }, []);
+
   const fetchAssignments = async () => {
     try {
       const { data, error } = await supabase

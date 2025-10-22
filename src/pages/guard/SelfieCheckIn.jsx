@@ -16,8 +16,16 @@ export default function SelfieCheckIn_v11() {
   const [guardName, setGuardName] = useState("");
 
   useEffect(() => {
-    startCamera();
+    let activeStream;
+    startCamera().then((stream) => (activeStream = stream));
     getLocation();
+
+    return () => {
+      if (activeStream) {
+        activeStream.getTracks().forEach((t) => t.stop());
+        console.log("📷 Camera stream stopped safely");
+      }
+    };
   }, []);
 
   const startCamera = async () => {
@@ -25,12 +33,18 @@ export default function SelfieCheckIn_v11() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
       });
-      videoRef.current.srcObject = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      } else {
+        console.warn("📷 Camera not ready when trying to attach stream");
+      }
+      return stream;
     } catch (err) {
-      console.error("Upload error:", err.message);
+      console.error("❌ Camera access failed:", err.message);
       setStatus(`❌ Failed: ${err.message}`);
+      return null;
     }
-      };
+  };
 
   const getLocation = () => {
     if (!navigator.geolocation) {
