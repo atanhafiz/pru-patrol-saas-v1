@@ -6,7 +6,7 @@ import "leaflet/dist/leaflet.css";
 
 // Global guard icon definition with .jpg image
 const guardIcon = L.icon({
-  iconUrl: "/images/guard-icon.jpg", // Direct path to public folder
+  iconUrl: "/images/guard-icon.jpg",
   iconSize: [45, 45],
   iconAnchor: [22, 45],
   popupAnchor: [0, -45],
@@ -19,6 +19,9 @@ export default function MapRealtime() {
   const routeCoordsRef = useRef([]);
   const [guards, setGuards] = useState([]);
   const markersRef = useRef(new Map()); // Store multiple markers by guard ID
+  
+  // Debug log for icon path
+  console.log("🛰️ MAP: using icon", guardIcon.options.iconUrl);
 
   useEffect(() => {
     // Initialize map with a small delay to ensure DOM is ready
@@ -53,28 +56,18 @@ export default function MapRealtime() {
         if (lat && lng) {
           console.log("🛰️ MAP: new position", { lat, lng, id });
           
-          // Handle marker for this specific guard
-          const existingMarker = markersRef.current.get(id);
-          if (existingMarker) {
-            existingMarker.setLatLng([lat, lng]);
-            console.log("🛰️ MAP: marker updated", { lat, lng });
-          } else {
-            // Create new marker with custom icon
-            const newMarker = L.marker([lat, lng], { icon: guardIcon })
-              .addTo(mapRef.current)
-              .bindPopup("Guard Active")
-              .openPopup();
-            markersRef.current.set(id, newMarker);
+          // Handle marker creation and updates
+          if (!markerRef.current) {
+            markerRef.current = L.marker([lat, lng], { icon: guardIcon }).addTo(mapRef.current);
+            markerRef.current.bindPopup("Guard Active").openPopup();
             
-            // Auto-center map on first guard appearance
+            // ✅ Auto-center map on first selfie-in
             mapRef.current.setView([lat, lng], 18, { animate: true });
-            console.log("🛰️ MAP: marker created and map centered on guard", { lat, lng });
-            
-            // Optional: add a small zoom delay for smoother animation
-            setTimeout(() => {
-              mapRef.current.setView([lat, lng], 18, { animate: true });
-              console.log("🛰️ MAP: map centered on guard");
-            }, 300);
+            console.log("🛰️ MAP: marker created & map centered");
+          } else {
+            // Update marker position on next coordinates
+            markerRef.current.setLatLng([lat, lng]);
+            console.log("🛰️ MAP: marker updated", { lat, lng });
           }
           
           // Add to route coordinates
@@ -119,12 +112,16 @@ export default function MapRealtime() {
         mapRef.current.remove();
         mapRef.current = null;
       }
-      // Clean up all markers
+      // Clean up single marker
+      if (markerRef.current) {
+        mapRef.current?.removeLayer(markerRef.current);
+        markerRef.current = null;
+      }
+      // Clean up all markers from Map
       markersRef.current.forEach(marker => {
         if (marker) mapRef.current?.removeLayer(marker);
       });
       markersRef.current.clear();
-      markerRef.current = null;
       polylineRef.current = null;
       routeCoordsRef.current = [];
       supabase.removeChannel(channel);
