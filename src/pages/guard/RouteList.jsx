@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { sendTelegramPhoto } from "../../shared/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
 import { Camera, Loader2 } from "lucide-react";
 import GuardBottomNav from "../../components/GuardBottomNav";
 import toast from "react-hot-toast";
@@ -28,6 +29,33 @@ function MapCenter({ center, zoom }) {
   return null;
 }
 
+// Component to handle polyline drawing
+function PolylineTracker({ center, polylineRef, routeCoords }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (center && center[0] && center[1]) {
+      // Add new coordinate to route
+      routeCoords.current.push([center[0], center[1]]);
+      
+      // Update or create polyline
+      if (polylineRef.current) {
+        polylineRef.current.setLatLngs(routeCoords.current);
+      } else {
+        polylineRef.current = L.polyline(routeCoords.current, {
+          color: "green",
+          weight: 5,
+          opacity: 0.9,
+        }).addTo(map);
+      }
+      
+      console.log("🛣️ Route polyline updated:", routeCoords.current.length, "points");
+    }
+  }, [center, map, polylineRef, routeCoords]);
+  
+  return null;
+}
+
 export default function RouteList() {
   const [assignments, setAssignments] = useState([]);
   const [guardName, setGuardName] = useState(localStorage.getItem("guardName") || "");
@@ -40,6 +68,10 @@ export default function RouteList() {
   const [selfieType, setSelfieType] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  
+  // Polyline tracking refs
+  const polylineRef = useRef(null);
+  const routeCoords = useRef([]);
 
   // ✅ New state to mark house as done
   const [doneHouseIds, setDoneHouseIds] = useState([]);
@@ -276,6 +308,7 @@ export default function RouteList() {
                 attribution="&copy; OpenStreetMap"
               />
               <MapCenter center={guardPos} zoom={18} />
+              <PolylineTracker center={guardPos} polylineRef={polylineRef} routeCoords={routeCoords} />
               {guardPos && (
                 <Marker 
                   position={guardPos}
@@ -362,7 +395,7 @@ export default function RouteList() {
                               if (file) handleUploadFile(file, a);
                             }}
                           />
-                          Snap
+                          📸 Snap
                         </label>
                       )}
                     </li>
