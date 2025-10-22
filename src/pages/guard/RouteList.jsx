@@ -28,13 +28,41 @@ export default function RouteList() {
   // 🛰️ GPS & Assignments
   useEffect(() => {
     fetchAssignments();
+    
+    // Set up GPS tracking and realtime broadcasting
+    const channel = supabase.channel("guard_location");
+    channel.subscribe();
+    console.log("🛰️ GUARD: channel subscribed guard_location");
+    
     const watch = navigator.geolocation.watchPosition(
-      (pos) => setGuardPos([pos.coords.latitude, pos.coords.longitude]),
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setGuardPos([lat, lng]);
+        
+        // Broadcast GPS location to admin
+        channel.send({
+          type: "broadcast",
+          event: "location_update",
+          payload: { 
+            lat, 
+            lng, 
+            id: 1, // Guard ID
+            name: guardName || "Guard",
+            status: "Patrolling"
+          }
+        });
+        console.log("🛰️ GUARD: location broadcasted", { lat, lng, guardName });
+      },
       (err) => console.error("GPS error:", err),
       { enableHighAccuracy: true }
     );
-    return () => navigator.geolocation.clearWatch(watch);
-  }, []);
+    
+    return () => {
+      navigator.geolocation.clearWatch(watch);
+      supabase.removeChannel(channel);
+    };
+  }, [guardName]);
 
   const fetchAssignments = async () => {
     try {

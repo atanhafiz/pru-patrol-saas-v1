@@ -48,7 +48,7 @@ export default function MapRealtime() {
     const channel = supabase
       .channel("guard_location")
       .on("broadcast", { event: "location_update" }, ({ payload }) => {
-        console.log("🛰️ MAP: received location update", payload);
+        console.log("🛰️ MAP: incoming payload", payload);
         
         if (!mapRef.current) return; // prevent calling before map is ready
         
@@ -105,6 +105,8 @@ export default function MapRealtime() {
         );
       })
       .subscribe();
+    
+    console.log("🛰️ MAP: channel subscribed guard_location");
 
     // Cleanup on unmount
     return () => {
