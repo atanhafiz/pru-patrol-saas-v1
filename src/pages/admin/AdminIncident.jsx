@@ -125,8 +125,9 @@ export default function AdminIncident() {
                 </p>
               </div>
               <p className="text-sm mb-2">
-                📝 {i.message || "(No description provided)"}
+                📝 {i.description || i.message || "(No description provided)"}
               </p>
+              {console.log("📝 INCIDENT DESC CHECK:", i.description, i.message)}
               {i.photo_url && (
                 <a href={i.photo_url} target="_blank" rel="noreferrer">
                   <img
