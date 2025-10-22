@@ -55,7 +55,7 @@ export default function PatrolTimeline() {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
                   <p className="font-semibold text-primary">{e.event}</p>
-                  <p className="text-sm text-gray-500 mt-1">👤 {e.guard_name || "Unknown Guard"}</p>
+                  <p className="text-sm text-gray-500 mt-1">👤 {e.guard_name || "Guard"}</p>
                 </div>
                 <span
                   className={`px-3 py-1 rounded-full text-xs text-white ${

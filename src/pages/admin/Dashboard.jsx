@@ -184,49 +184,56 @@ export default function Dashboard() {
 
   return (
     <AdminLayout_Clean>
-      <div className="min-h-screen bg-gradient-to-br from-soft via-white to-soft p-4 sm:p-10">
+      <div className="min-h-screen bg-gradient-to-br from-[#f7faff] via-white to-[#edf3ff] p-4 sm:p-10">
       <motion.div
-  className="mb-10 flex justify-between items-center"
-  initial={{ opacity: 0, y: -20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.6 }}
->
-  <div>
-    <h1 className="text-4xl font-extrabold text-primary mb-1">
-      Admin Dashboard
-    </h1>
-    <p className="text-gray-500 text-lg">
-      Welcome,{" "}
-      <span className="font-semibold">Admin</span> 👋
-    </p>
-  </div>
-</motion.div>  {/* ✅ ni betul */}
+        className="bg-gradient-to-br from-white to-[#f5f9ff] border border-gray-100 rounded-2xl shadow-sm p-5 sm:p-6 mb-4 sm:mb-6"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div>
+          <h1 className="text-4xl font-extrabold text-[#0B132B] mb-1">
+            Admin Dashboard
+          </h1>
+          <p className="text-gray-500 text-lg">
+            Welcome,{" "}
+            <span className="font-semibold">Admin</span>
+          </p>
+          <p className="text-sm text-gray-500">Monitor patrols, incidents, and reports in real time.</p>
+        </div>
+      </motion.div>
 
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-4 mb-6">
-          <LiveGuardMapButton />
+          <Link
+            to="/admin/map"
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition"
+          >
+            <MapPin className="w-4 h-4" />
+            Live Guard Tracking Map
+          </Link>
           <Link
             to="/admin/incidents"
-            className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-3 rounded-xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+            className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg transition"
           >
-            <Bell className="w-5 h-5" />
-            <span className="font-semibold">🚨 Incident Reports</span>
+            <Bell className="w-4 h-4" />
+            Incident Reports
           </Link>
         </div>
 
         {/* Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-10">
           {metrics.map((item, i) => (
             <motion.div
               key={i}
-              className={`p-6 rounded-2xl shadow-md bg-gradient-to-br ${item.gradient} text-white flex flex-col justify-between hover:shadow-2xl transition`}
-              whileHover={{ scale: 1.05 }}
+              className="bg-gradient-to-br from-white to-[#f5f9ff] border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition p-4 sm:p-5"
+              whileHover={{ scale: 1.02 }}
             >
               <div className="flex justify-between items-center mb-2">
-                <p className="font-medium">{item.title}</p>
-                {item.icon}
+                <p className="text-sm text-gray-500">{item.title}</p>
+                {item.icon && <div className="opacity-70 w-5 h-5">{item.icon}</div>}
               </div>
-              <h2 className="text-4xl font-extrabold">{item.value}</h2>
+              <h2 className="text-3xl font-bold text-[#0B132B] mt-1">{item.value}</h2>
             </motion.div>
           ))}
         </div>
@@ -240,27 +247,27 @@ export default function Dashboard() {
 
         {/* Activity Log */}
         <motion.div
-          className="bg-white rounded-2xl shadow-md p-6 mt-10"
+          className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm p-4 sm:p-5 mt-10"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
         >
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-semibold text-primary flex items-center gap-2">
-              <Activity className="w-6 h-6 text-accent" /> 📜 Activity Log
+            <h2 className="text-lg font-semibold text-[#0B132B] flex items-center gap-2">
+              <Activity className="w-5 h-5 text-accent" /> 📜 Activity Log
             </h2>
             <div className="flex gap-2">
               {allCompletedToday && (
                 <button
                   onClick={clearTodayTasks}
-                  className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition"
+                  className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white px-3 py-1.5 rounded-lg text-sm"
                 >
                   🧹 Clear Today's Task
                 </button>
               )}
               <button
                 onClick={clearStatus}
-                className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:shadow-lg transition"
+                className="flex items-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white px-3 py-1.5 rounded-lg text-sm"
               >
                 <Trash2 className="w-4 h-4" /> 🧹 Clear Status
               </button>
@@ -317,7 +324,7 @@ export default function Dashboard() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="p-6 text-center text-gray-500">
+                    <td colSpan="4" className="p-6 text-center text-sm text-gray-500 italic">
                       No activity logs found
                     </td>
                   </tr>

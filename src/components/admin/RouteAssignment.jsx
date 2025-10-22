@@ -105,15 +105,15 @@ export default function RouteAssignment() {
 
   return (
     <motion.div
-      className="bg-white rounded-2xl shadow-md p-6 mt-10"
+      className="bg-gradient-to-br from-white to-[#f5f9ff] border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition p-4 sm:p-5 mt-10"
       initial={{ opacity: 0, y: 25 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-        <ClipboardList className="text-accent w-6 h-6" />
-        Route Assignment — Admin PRO v5
-      </h2>
+      <h3 className="text-xl font-bold text-[#0B132B] mb-3 flex items-center gap-2">
+        <ClipboardList className="text-accent w-5 h-5" />
+        🧭 Route Assignment
+      </h3>
 
       {/* Form Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-5">
@@ -121,7 +121,7 @@ export default function RouteAssignment() {
         <select
           value={selectedHouse}
           onChange={(e) => handleSelectHouse(e.target.value)}
-          className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent"
+          className="border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Select House Number</option>
           {houseList.map((r, i) => (
@@ -133,19 +133,19 @@ export default function RouteAssignment() {
         <input
           value={streetName}
           disabled
-          className="border rounded-xl px-3 py-2 bg-gray-100"
+          className="border border-gray-200 rounded-xl px-3 py-2 bg-gray-100"
           placeholder="Street"
         />
         <input
           value={block}
           disabled
-          className="border rounded-xl px-3 py-2 bg-gray-100"
+          className="border border-gray-200 rounded-xl px-3 py-2 bg-gray-100"
           placeholder="Block"
         />
         <select
           value={sessionNo}
           onChange={(e) => setSessionNo(e.target.value)}
-          className="border rounded-xl px-3 py-2 focus:ring-2 focus:ring-accent"
+          className="border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Select Session</option>
           {[1, 2, 3, 4, 5, 6].map((s) => (
@@ -156,7 +156,7 @@ export default function RouteAssignment() {
         </select>
         <button
           onClick={handleAssign}
-          className="bg-accent text-white rounded-xl px-4 py-2 hover:bg-accent/90 transition"
+          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2 rounded-xl font-semibold shadow-md hover:shadow-lg transition"
         >
           Assign
         </button>
@@ -165,9 +165,9 @@ export default function RouteAssignment() {
       {statusMsg && <p className="text-sm text-gray-500 mb-3">{statusMsg}</p>}
 
       {/* Table Section */}
-      <div className="overflow-x-auto">
-        <table className="w-full border text-sm">
-          <thead className="bg-soft text-left">
+      <div className="overflow-x-auto bg-white border border-gray-100 rounded-2xl shadow-sm">
+        <table className="w-full text-sm">
+          <thead className="bg-[#f7faff] text-[#0B132B] font-semibold">
             <tr>
               <th className="p-3">Guard</th>
               <th className="p-3">House No</th>
@@ -178,9 +178,9 @@ export default function RouteAssignment() {
               <th className="p-3 text-center">Action</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-100">
             {assignments.map((a) => (
-              <tr key={a.id} className="border-b hover:bg-gray-50 transition">
+              <tr key={a.id} className="hover:bg-gray-50 transition">
                 <td className="p-3">{a.guard_name || "-"}</td>
                 <td className="p-3">{a.house_no}</td>
                 <td className="p-3">{a.street_name}</td>
@@ -205,7 +205,7 @@ export default function RouteAssignment() {
                 <td className="p-3 text-center">
                   <button
                     onClick={() => handleDelete(a.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"
+                    className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white p-2 rounded-lg"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />

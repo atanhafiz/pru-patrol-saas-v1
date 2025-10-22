@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 
 export default function HouseSnapUploader({
   houseLabel = "House",
-  guardName = "Unknown Guard",
+  guardName = "Guard",
   plateNo = "-",
   onUploaded = () => {},
 }) {

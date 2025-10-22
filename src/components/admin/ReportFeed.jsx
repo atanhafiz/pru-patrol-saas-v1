@@ -90,20 +90,20 @@ export default function ReportFeed() {
 
   return (
     <motion.div
-      className="bg-gradient-to-br from-white to-soft rounded-3xl shadow-lg p-8 mt-10 border border-gray-100"
+      className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm p-4 sm:p-5 mt-10"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-extrabold text-primary flex items-center gap-2">
-          <AlertTriangle className="w-7 h-7 text-yellow-500" />
+        <h2 className="text-lg font-semibold text-[#0B132B] flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-yellow-500" />
           Live Incident Reports
         </h2>
         <button
           onClick={handleArchiveOldReports}
           disabled={isArchiving}
-          className="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors"
+          className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 disabled:bg-gray-400 text-white px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors"
         >
           <Trash2 className="w-4 h-4" />
           {isArchiving ? "Archiving..." : "🧹 Clear Old Reports"}
@@ -111,7 +111,7 @@ export default function ReportFeed() {
       </div>
 
       {reports.length === 0 ? (
-        <p className="text-gray-400 italic">No incidents reported yet.</p>
+        <p className="text-sm text-gray-500 italic">No incidents reported yet.</p>
       ) : (
         <motion.div
           variants={containerVariants}
@@ -146,7 +146,7 @@ export default function ReportFeed() {
                     }
                   }
                 }}
-                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow transition z-10"
+                className="absolute top-2 right-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white p-2 rounded-lg shadow transition z-10"
                 title="Delete Incident"
               >
                 <Trash2 className="w-4 h-4" />
@@ -204,7 +204,7 @@ export default function ReportFeed() {
         <div className="flex justify-center mt-6">
           <button
             onClick={() => setVisibleCount((prev) => prev + 20)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow transition"
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 rounded-xl shadow-md hover:shadow-lg transition"
           >
             Load More
           </button>

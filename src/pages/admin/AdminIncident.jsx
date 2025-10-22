@@ -115,7 +115,7 @@ export default function AdminIncident() {
                 <Trash2 className="w-4 h-4" />
               </button>
               <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-primary">{i.guard_name || "Unknown Guard"}</p>
+                <p className="font-semibold text-primary">{i.guard_name || "Guard"}</p>
                 <p className="text-xs text-gray-500">
                   {new Date(i.created_at).toLocaleString()}
                 </p>

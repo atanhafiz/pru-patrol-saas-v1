@@ -7,7 +7,7 @@ serve(async (req: Request) => {
 
     // data from Supabase insert event
     const record = payload.record;
-    const guard_name = record.guard_name || "Unknown Guard";
+    const guard_name = record.guard_name || "Guard";
     const plate_no = record.plate_no || "-";
     const message = record.message || "(No message)";
     const photo_url = record.photo_url || "https://upload.wikimedia.org/wikipedia/commons/8/84/Example.svg";

@@ -83,11 +83,11 @@ export default function AdminLayout_Clean({ children }) {
   }, [alertCount]);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-gray-800 relative overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#f7faff] via-white to-[#edf3ff] text-gray-800 relative overflow-x-hidden">
       {/* Hidden audio element for notifications */}
       <audio id="alertSound" src="/sounds/pling.mp3" preload="auto" />
       {/* 🧭 Top Navigation Bar */}
-      <header className="flex items-center justify-between bg-white/90 backdrop-blur-md border-b px-4 py-3 sticky top-0 z-50 shadow-sm">
+      <header className="flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMenuOpen(true)}

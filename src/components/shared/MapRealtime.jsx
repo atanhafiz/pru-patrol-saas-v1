@@ -39,12 +39,16 @@ export default function MapRealtime() {
 
   return (
     <motion.div
-      className="rounded-2xl shadow-xl overflow-hidden border border-gray-100"
+      className="rounded-2xl overflow-hidden border border-gray-200 shadow-md"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      <div className="h-[600px] w-full">
+      <div className="flex items-baseline justify-between px-4 pt-4">
+        <h3 className="text-lg font-semibold text-[#0B132B]">🗺️ Live Guard Tracking</h3>
+        <p className="text-xs text-gray-500">Last update: just now</p>
+      </div>
+      <div className="h-[420px] w-full">
         <MapContainer
           center={[5.648, 100.485]}
           zoom={15}
