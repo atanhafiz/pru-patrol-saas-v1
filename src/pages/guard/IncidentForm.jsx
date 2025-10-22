@@ -136,7 +136,23 @@ export default function IncidentForm_v11() {
 ${osmLink}
 ${googleLink}
 🕓 ${new Date().toLocaleString()}`;
-      await sendTelegramPhoto(photoUrl || "", caption);
+      // Send Telegram async (fire-and-forget)
+      sendTelegramPhoto(photoUrl || "", caption)
+        .then(() => {
+          console.log("✅ Telegram sent (async)");
+          // Play success sound and vibration
+          try {
+            const audio = new Audio("/success.mp3");
+            audio.play().catch(() => {}); // Ignore audio errors
+            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+          } catch (e) {
+            console.log("Audio/vibration not available");
+          }
+        })
+        .catch((err) => {
+          console.error("❌ Telegram error:", err);
+        });
+      
       await logEvent("INCIDENT", description, "Guard");
       resetForm();
       setStatus("✅ Incident submitted successfully!");

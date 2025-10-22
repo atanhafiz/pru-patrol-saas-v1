@@ -72,6 +72,9 @@ export default function RouteList() {
   // Polyline tracking refs
   const polylineRef = useRef(null);
   const routeCoords = useRef([]);
+  
+  // Upload debounce protection
+  const uploadingRef = useRef(new Set());
 
   // ✅ New state to mark house as done
   const [doneHouseIds, setDoneHouseIds] = useState([]);
@@ -209,19 +212,44 @@ export default function RouteList() {
 
   // 🏠 Snap Rumah (Stay-in-Page + mark Done)
   const handleUploadFile = async (file, assignment) => {
+    const { id } = assignment || {};
+    
+    // Debounce protection - prevent multiple uploads for same house
+    if (uploadingRef.current.has(id)) {
+      console.log("⚠️ Upload already in progress for house", id);
+      return;
+    }
+    
     try {
+      uploadingRef.current.add(id);
       setLoading(true);
       const ts = Date.now();
       const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
       const blob = file;
-      const { id, house_no, street_name, block } = assignment || {};
+      const { house_no, street_name, block } = assignment || {};
       const filePath = `houses/${house_no}_${plateNo}_${ts}.jpg`;
       const photoUrl = await uploadToSupabase(filePath, blob);
 
       const caption = `🏠 *${house_no} ${street_name} (${block})*\n👤 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
-      await sendTelegramPhoto(photoUrl, caption);
-
-      toast.success("✅ Sent to Telegram!");
+      
+      // Send Telegram async (fire-and-forget)
+      sendTelegramPhoto(photoUrl, caption)
+        .then(() => {
+          console.log("✅ Telegram sent (async)");
+          toast.success("✅ Sent to Telegram!");
+          // Play success sound and vibration
+          try {
+            const audio = new Audio("/success.mp3");
+            audio.play().catch(() => {}); // Ignore audio errors
+            if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+          } catch (e) {
+            console.log("Audio/vibration not available");
+          }
+        })
+        .catch((err) => {
+          console.error("❌ Telegram error:", err);
+          toast.error("❌ Telegram failed: " + (err.message || err));
+        });
 
       // ✅ Mark house as done (replace Snap with Done)
       setDoneHouseIds((prev) => [...prev, id]);
@@ -232,6 +260,7 @@ export default function RouteList() {
       toast.error("❌ Upload failed: " + (err.message || err));
     } finally {
       setLoading(false);
+      uploadingRef.current.delete(id);
     }
   };
 

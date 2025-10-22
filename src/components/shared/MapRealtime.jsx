@@ -23,6 +23,7 @@ export default function MapRealtime() {
   const routeCoordsRef = useRef([]);
   const [guards, setGuards] = useState([]);
   const markersRef = useRef(new Map()); // Store multiple markers by guard ID
+  const prevPositionRef = useRef(null); // Store previous position for speed calculation
 
   useEffect(() => {
     // Initialize map with a small delay to ensure DOM is ready
@@ -74,26 +75,50 @@ export default function MapRealtime() {
           routeCoordsRef.current.push([lat, lng]);
           console.log("🛰️ MAP: route points", routeCoordsRef.current.length);
           
-          // Remove old polyline before drawing new
-          if (polylineRef.current) {
-            mapRef.current.removeLayer(polylineRef.current);
+          // Calculate speed if we have previous position
+          let speedKmh = 0;
+          if (prevPositionRef.current) {
+            const prevPos = prevPositionRef.current;
+            const distance = L.latLng(prevPos.lat, prevPos.lng).distanceTo(L.latLng(lat, lng));
+            const timeDiff = (Date.now() - prevPos.timestamp) / 1000; // seconds
+            if (timeDiff > 0) {
+              speedKmh = Math.abs(distance / timeDiff) * 3.6; // Convert m/s to km/h
+            }
           }
           
-          // Draw new polyline with route
+          // Store current position for next calculation
+          prevPositionRef.current = { lat, lng, timestamp: Date.now() };
+          
+          // Update or create polyline with error handling
           if (routeCoordsRef.current.length > 1) {
-            // Calculate speed-based color (if speed is available in payload)
-            const speed = payload.speed || 0;
-            let color = "green";
-            if (speed >= 10 && speed < 40) color = "orange";
-            else if (speed >= 40) color = "red";
-            
-            polylineRef.current = L.polyline(routeCoordsRef.current, {
-              color: color,
-              weight: 5,
-              opacity: 0.8,
-            }).addTo(mapRef.current);
-            
-            console.log("🛰️ MAP: polyline updated with", routeCoordsRef.current.length, "points, color:", color);
+            if (polylineRef.current) {
+              try {
+                polylineRef.current.setLatLngs(routeCoordsRef.current);
+                
+                // Update polyline color based on speed
+                let color = "green";
+                if (speedKmh >= 10 && speedKmh < 40) color = "orange";
+                else if (speedKmh >= 40) color = "red";
+                
+                polylineRef.current.setStyle({ color });
+                console.log("🛰️ MAP: polyline updated with", routeCoordsRef.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", color);
+              } catch (e) {
+                console.warn("⚠️ Polyline update skipped (map still animating)");
+              }
+            } else {
+              // Calculate speed-based color for new polyline
+              let color = "green";
+              if (speedKmh >= 10 && speedKmh < 40) color = "orange";
+              else if (speedKmh >= 40) color = "red";
+              
+              polylineRef.current = L.polyline(routeCoordsRef.current, {
+                color: color,
+                weight: 5,
+                opacity: 0.8,
+              }).addTo(mapRef.current);
+              
+              console.log("🛰️ MAP: polyline created with", routeCoordsRef.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", color);
+            }
           }
         }
         
