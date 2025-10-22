@@ -28,12 +28,16 @@ export default function AdminIncident() {
 
   const fetchIncidents = async () => {
     setLoading(true);
+    console.log("🚨 ALERT-DEBUG: AdminIncident fetch started");
     const { data, error } = await supabase
       .from("incidents")
       .select("*")
       .order("created_at", { ascending: false });
+    console.log("🚨 ALERT-DEBUG: AdminIncident fetched incidents", data);
+    console.log("🚨 ALERT-DEBUG: AdminIncident filter used", { no_status_filter: true });
+    console.log("🚨 ALERT-DEBUG: mismatch detected - AdminIncident uses no status filter but AlertCenter uses .eq('status','active')");
     if (error) {
-      console.error("Error fetching incidents:", error.message);
+      console.error("🚨 ALERT-DEBUG: AdminIncident fetch error", error.message);
     } else {
       setIncidents(data || []);
     }

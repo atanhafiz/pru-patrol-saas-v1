@@ -8,31 +8,44 @@ export default function AdminAlert() {
   const [alertData, setAlertData] = useState(null);
 
   useEffect(() => {
+    console.log("🚨 ALERT-REALTIME: AdminAlert component mounted");
     // Subscribe to new incident realtime event
     const channel = supabase
-      .channel("incident_alerts")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "incidents" },
-        (payload) => {
-          setAlertData(payload.new);
+      .channel("incident_alerts");
+    
+    console.log("🚨 ALERT-REALTIME: AdminAlert channel created", "incident_alerts");
+    
+    channel.on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "incidents" },
+      (payload) => {
+        console.log("🚨 ALERT-REALTIME: AdminAlert event received", payload);
+        setAlertData(payload.new);
 
-          // 🔊 Play siren sound direct from URL (no local file)
-          const sound = new Howl({
-            src: [
-              "https://assets.mixkit.co/sfx/preview/mixkit-security-facility-alarm-buzzer-994.mp3",
-            ],
-            volume: 0.6,
-          });
-          sound.play();
+        // 🔊 Play siren sound direct from URL (no local file)
+        const sound = new Howl({
+          src: [
+            "https://assets.mixkit.co/sfx/preview/mixkit-security-facility-alarm-buzzer-994.mp3",
+          ],
+          volume: 0.6,
+        });
+        sound.play();
 
-          // Auto hide after 6 seconds
-          setTimeout(() => setAlertData(null), 6000);
-        }
-      )
-      .subscribe();
+        // Auto hide after 6 seconds
+        setTimeout(() => setAlertData(null), 6000);
+      }
+    );
+    
+    // Add error handling
+    channel.on("system", { event: "error" }, (err) => {
+      console.error("🚨 ALERT-REALTIME: AdminAlert subscription error", err);
+    });
+    
+    channel.subscribe();
+    console.log("🚨 ALERT-REALTIME: AdminAlert subscription started");
 
     return () => {
+      console.log("🚨 ALERT-REALTIME: AdminAlert unsubscribed on unmount");
       supabase.removeChannel(channel);
     };
   }, []);
