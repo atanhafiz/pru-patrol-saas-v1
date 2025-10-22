@@ -4,12 +4,12 @@ import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabaseClient";
 import "leaflet/dist/leaflet.css";
 
-// Global guard icon definition with fallback
+// Global guard icon definition with .jpg image
 const guardIcon = L.icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/3061/3061285.png", // fallback icon
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
+  iconUrl: "/images/guard-icon.jpg", // Direct path to public folder
+  iconSize: [45, 45],
+  iconAnchor: [22, 45],
+  popupAnchor: [0, -45],
 });
 
 export default function MapRealtime() {
@@ -57,16 +57,24 @@ export default function MapRealtime() {
           const existingMarker = markersRef.current.get(id);
           if (existingMarker) {
             existingMarker.setLatLng([lat, lng]);
+            console.log("🛰️ MAP: marker updated", { lat, lng });
           } else {
+            // Create new marker with custom icon
             const newMarker = L.marker([lat, lng], { icon: guardIcon })
               .addTo(mapRef.current)
-              .bindPopup(`
-                <div className="text-center">
-                  <h2 className="font-bold text-primary">${name || 'Guard'}</h2>
-                  <p className="text-sm">${status || 'Patrolling'}</p>
-                </div>
-              `);
+              .bindPopup("Guard Active")
+              .openPopup();
             markersRef.current.set(id, newMarker);
+            
+            // Auto-center map on first guard appearance
+            mapRef.current.setView([lat, lng], 18, { animate: true });
+            console.log("🛰️ MAP: marker created and map centered on guard", { lat, lng });
+            
+            // Optional: add a small zoom delay for smoother animation
+            setTimeout(() => {
+              mapRef.current.setView([lat, lng], 18, { animate: true });
+              console.log("🛰️ MAP: map centered on guard");
+            }, 300);
           }
           
           // Add to route coordinates
