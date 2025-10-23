@@ -64,6 +64,14 @@ export default function MapRealtime({ isTrackingPaused = false }) {
           .on("broadcast", { event: "location_update" }, ({ payload }) => {
             console.log("🛰️ MAP: incoming payload", payload);
             
+            // 🧭 [DEBUG] First payload check
+            console.log("🧭 [DEBUG] First payload check →",
+              "map:", !!mapRef.current,
+              "points:", routePoints.current.length,
+              "paused:", isTrackingPaused,
+              "lat:", payload.lat, "lng:", payload.lng
+            );
+            
             if (!mapRef.current) return; // prevent calling before map is ready
             if (isTrackingPaused) return; // skip marker redraw if tracking paused
             
