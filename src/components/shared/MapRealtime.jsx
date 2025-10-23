@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabaseClient";
+import { getGuardChannel } from "../../lib/guardChannel";
 import "leaflet/dist/leaflet.css";
 
 // Fix broken default marker paths in Netlify/Vite
@@ -21,6 +22,7 @@ export default function MapRealtime({ isTrackingPaused = false }) {
   const markerRef = useRef(null);
   const polylineRef = useRef(null);
   const routePoints = useRef([]);
+  const routeRef = useRef([]);
   const channelRef = useRef(null);
   const [guards, setGuards] = useState([]);
   const markersRef = useRef(new Map()); // Store multiple markers by guard ID
@@ -54,7 +56,7 @@ export default function MapRealtime({ isTrackingPaused = false }) {
 
     console.log("🛰️ MAP: subscribing guard_location channel...");
 
-    const channel = supabase.channel("guard_location", { config: { broadcast: { self: false } } })
+    const channel = getGuardChannel()
       .on("broadcast", { event: "location_update" }, (payload) => {
         console.log("🛰️ MAP: incoming payload", payload.payload);
         const { lat, lng, name } = payload.payload || {};
@@ -68,24 +70,40 @@ export default function MapRealtime({ isTrackingPaused = false }) {
           "lat:", lat, "lng:", lng
         );
 
-        // store route points
-        routePoints.current.push([lat, lng]);
+        // Safety checks and marker updates
+        if (!mapRef?.current || !payload?.payload) return;
 
-        // update marker with safety
         try {
+          const { lat, lng, name } = payload.payload;
+          if (!lat || !lng) return;
+
+          // Update marker safely
           if (!markerRef.current) {
-            markerRef.current = L.marker([lat, lng]).addTo(mapRef.current).bindPopup(name || "Guard Active");
-            mapRef.current.flyTo([lat, lng], 17, { animate: true, duration: 1.2 });
+            markerRef.current = L.marker([lat, lng], {
+              icon: L.icon({
+                iconUrl: "/images/guard-icon.png",
+                iconSize: [40, 40],
+                iconAnchor: [20, 40],
+              }),
+            }).addTo(mapRef.current);
+            console.log("🛰️ MAP: marker created & map centered");
+            mapRef.current.flyTo([lat, lng], 17, { animate: true, duration: 1.5 });
           } else {
             markerRef.current.setLatLng([lat, lng]);
+            console.log("🛰️ MAP: marker updated", { lat, lng });
+          }
+
+          // Update polyline route points safely
+          routePoints.current.push([lat, lng]);
+          if (routePoints.current.length > 1) {
+            const lastTwo = routePoints.current.slice(-2);
+            const segment = L.polyline(lastTwo, { color: "green", weight: 4 }).addTo(mapRef.current);
+            if (!routeRef.current) routeRef.current = [];
+            routeRef.current.push(segment);
           }
         } catch (err) {
-          console.warn("⚠️ MAP marker render error", err.message);
+          console.warn("⚠️ MAP update skipped:", err.message);
         }
-
-        // update polyline
-        if (polylineRef.current) mapRef.current.removeLayer(polylineRef.current);
-        polylineRef.current = L.polyline(routePoints.current, { color: "green", weight: 4 }).addTo(mapRef.current);
       })
       .subscribe();
 
