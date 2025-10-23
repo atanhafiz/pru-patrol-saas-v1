@@ -1,6 +1,9 @@
 // AHE SmartPatrol Hybrid Stable (Fixed Stay-in-Page Mode + Snap→Done)
 // RouteList.jsx – Guard stays on page after snap until selfie OUT
 
+// 🧭 Global GPS watchId for safe tracking management
+let gpsWatchId = null;
+
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
@@ -17,14 +20,18 @@ function MapCenter({ center, zoom }) {
   const map = useMap();
   
   useEffect(() => {
-    if (center && center[0] && center[1]) {
+    if (center && center[0] && center[1] && map) {
       const zoomLevel = zoom || 18;
-      map.flyTo(center, zoomLevel, {
-        animate: true,
-        duration: 1.5, // smooth transition ~1.5s
-        easeLinearity: 0.25,
-      });
-      console.log("🌀 flyTo animation:", center[0], center[1]);
+      if (map.flyTo) {
+        map.flyTo(center, zoomLevel, {
+          animate: true,
+          duration: 1.5, // smooth transition ~1.5s
+          easeLinearity: 0.25,
+        });
+        console.log("🗺️ flyTo animation:", center[0], center[1]);
+      } else {
+        console.warn("⚠️ mapRef not ready, skipping flyTo action");
+      }
     }
   }, [center, zoom, map]);
   
@@ -36,20 +43,26 @@ function PolylineTracker({ center, polylineRef, routeCoords, routePoints }) {
   const map = useMap();
   
   useEffect(() => {
-    if (center && center[0] && center[1]) {
+    if (center && center[0] && center[1] && map) {
       // Add new coordinate to route
       routeCoords.current.push([center[0], center[1]]);
       routePoints.current.push([center[0], center[1]]);
       
-      // Update or create polyline
+      // Update or create polyline with defensive checks
       if (polylineRef.current) {
-        polylineRef.current.setLatLngs(routeCoords.current);
+        if (polylineRef.current.setLatLngs) {
+          polylineRef.current.setLatLngs(routeCoords.current);
+        }
       } else {
-        polylineRef.current = L.polyline(routeCoords.current, {
-          color: "green",
-          weight: 5,
-          opacity: 0.9,
-        }).addTo(map);
+        if (L.polyline && map.addLayer) {
+          polylineRef.current = L.polyline(routeCoords.current, {
+            color: "green",
+            weight: 5,
+            opacity: 0.9,
+          }).addTo(map);
+        } else {
+          console.warn("⚠️ mapRef not ready, skipping polyline action");
+        }
       }
       
       console.log("🛣️ Route polyline updated:", routeCoords.current.length, "points");
@@ -112,7 +125,7 @@ export default function RouteList() {
         return;
       }
 
-      watchId = navigator.geolocation.watchPosition(
+      gpsWatchId = navigator.geolocation.watchPosition(
         (pos) => {
           if (isUnmounted) return;
           const { latitude, longitude } = pos.coords;
@@ -129,37 +142,47 @@ export default function RouteList() {
               status: "Patrolling",
             },
           });
+          console.log("🛰️ Realtime broadcast sent:", latitude, longitude);
         },
         (err) => console.warn("⚠️ GPS error:", err.message),
         { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
       );
+      console.log("🧭 GPS tracking started with watchId:", gpsWatchId);
     };
 
     startTracking();
 
     return () => {
+      console.log("🧹 RouteList cleanup starting...");
+
       try {
-        isUnmounted = true;
-
-        // ✅ Safeguard against double cleanup
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-
-        // ✅ Only cleanup map if exists and not removed yet
-        if (mapRef?.current && mapRef.current._container) {
-          try {
-            mapRef.current.remove();
-            console.log("🧹 Map removed safely (once)");
-          } catch (err) {
-            console.warn("⚠️ Map already removed, skipping...");
-          }
+        // 1️⃣ Stop GPS first
+        if (gpsWatchId) {
+          navigator.geolocation.clearWatch(gpsWatchId);
+          console.log("🧭 GPS tracking stopped safely");
+          gpsWatchId = null;
         }
 
-        // ✅ Close channel safely
-        closeGuardChannel();
+        // 2️⃣ Wait small delay for polyline final update
+        setTimeout(() => {
+          // 3️⃣ Stop map updates and remove markers/polylines
+          if (mapRef?.current) {
+            mapRef.current.stop();
+            mapRef.current.off();
+            mapRef.current.eachLayer((layer) => {
+              if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+                mapRef.current.removeLayer(layer);
+              }
+            });
+            console.log("🗺️ Map layers cleared");
+          }
 
-        console.log("🧹 RouteList cleanup: GPS + channel closed safely");
+          // 4️⃣ Close Supabase channel LAST
+          closeGuardChannel();
+          console.log("🧹 Guard channel closed safely");
+        }, 300);
       } catch (err) {
-        console.warn("⚠️ Cleanup error:", err.message);
+        console.warn("⚠️ RouteList cleanup error:", err.message);
       }
     };
   }, []);
@@ -231,8 +254,18 @@ export default function RouteList() {
   const handleSelfieOut = async () => {
     try {
       console.log("📷 Selfie Out initiated");
-      // Stop GPS tracking
-      if (watchId) navigator.geolocation.clearWatch(watchId);
+
+      try {
+        if (gpsWatchId) {
+          navigator.geolocation.clearWatch(gpsWatchId);
+          console.log("🧭 GPS tracking stopped safely on Selfie Out");
+          gpsWatchId = null;
+        } else {
+          console.warn("⚠️ GPS watchId not found, skipping clearWatch()");
+        }
+      } catch (gpsErr) {
+        console.error("⚠️ GPS clearWatch error:", gpsErr.message);
+      }
 
       // Stop Leaflet map safely
       if (mapRef?.current) {
