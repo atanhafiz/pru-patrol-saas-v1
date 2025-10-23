@@ -2,6 +2,7 @@
 // RouteList.jsx – Guard stays on page after snap until selfie OUT
 
 import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { getGuardChannel, closeGuardChannel } from "../../lib/guardChannel";
 import { sendTelegramPhoto } from "../../shared/api/telegram";
@@ -59,6 +60,7 @@ function PolylineTracker({ center, polylineRef, routeCoords, routePoints }) {
 }
 
 export default function RouteList() {
+  const navigate = useNavigate();
   const [assignments, setAssignments] = useState([]);
   const [guardName, setGuardName] = useState(localStorage.getItem("guardName") || "");
   const [plateNo, setPlateNo] = useState(localStorage.getItem("plateNo") || "");
@@ -99,102 +101,53 @@ export default function RouteList() {
     return () => { isMounted.current = false; };
   }, []);
 
-  // 🛰️ GPS & Assignments
+  // ✅ Safety cleanup untuk GPS + Map + Channel
   useEffect(() => {
-    fetchAssignments();
-    
-    // Set up GPS tracking and realtime broadcasting
-    const channel = getGuardChannel();
-    console.log("🛰️ GUARD: channel subscribed guard_location");
-    
-    const watch = navigator.geolocation.watchPosition(
-      (pos) => {
-        // Skip tracking if paused during photo snap
-        if (isTrackingPaused) return;
-        
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setGuardPos([lat, lng]);
-        
-        // Broadcast GPS location to admin
-        channel.send({
-          type: "broadcast",
-          event: "location_update",
-          payload: { 
-            lat, 
-            lng, 
-            id: 1, // Guard ID
-            name: guardName || "Guard",
-            status: "Patrolling"
-          }
-        });
-        console.log("🛰️ GUARD: location broadcasted", { lat, lng, guardName });
-        
-        // Prevent updates after unmount
-        if (!isMounted.current) return;
-        
-        // Add to route points
-        routePoints.current.push([lat, lng]);
-        
-        // 🧭 Limit flyTo every 3s to avoid lag
-        const now = Date.now();
-        if (mapRef?.current && now - lastFlyTime.current > 3000) {
-          lastFlyTime.current = now;
-          mapRef.current.setView([lat, lng], 18, { animate: false });
-        }
-        
-        // 🧩 Marker creation/update
-        if (mapRef?.current) {
-          if (!markerRef.current) {
-            markerRef.current = L.marker([lat, lng])
-              .addTo(mapRef.current)
-              .bindPopup(guardName || "Guard Active");
-          } else {
-            markerRef.current.setLatLng([lat, lng]);
-          }
-        }
-        
-        // 🛣️ Polyline drawing (stable)
-        if (mapRef?.current) {
-          if (!polylineRef.current) {
-            polylineRef.current = L.polyline(routePoints.current, {
-              color: "green",
-              weight: 4,
-              opacity: 0.9,
-              smoothFactor: 1.2,
-            }).addTo(mapRef.current);
-          } else {
-            polylineRef.current.setLatLngs(routePoints.current);
-          }
-        }
-      },
-      (err) => console.error("GPS error:", err),
-      { enableHighAccuracy: true }
-    );
-    
+    let watchId = null;
+    let isUnmounted = false;
+
+    const startTracking = async () => {
+      if (!navigator.geolocation) {
+        console.warn("❌ GPS not supported");
+        return;
+      }
+
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          if (isUnmounted) return;
+          const { latitude, longitude } = pos.coords;
+          setGuardPos([latitude, longitude]);
+
+          const channel = getGuardChannel();
+          channel.send({
+            type: "broadcast",
+            event: "location_update",
+            payload: {
+              lat: latitude,
+              lng: longitude,
+              name: guardName || "Guard Active",
+              status: "Patrolling",
+            },
+          });
+        },
+        (err) => console.warn("⚠️ GPS error:", err.message),
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+      );
+    };
+
+    startTracking();
+
     return () => {
-      console.log("🧹 Cleanup: stopping GPS & removing map layers");
-      
-      isMounted.current = false;
-      
-      navigator.geolocation.clearWatch(watch);
-      closeGuardChannel();
-      
-      // Clean up map layers safely
       try {
-        if (markerRef.current) {
-          mapRef.current?.removeLayer(markerRef.current);
-          markerRef.current = null;
-        }
-        if (polylineRef.current) {
-          mapRef.current?.removeLayer(polylineRef.current);
-          polylineRef.current = null;
-        }
+        isUnmounted = true;
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        closeGuardChannel();
+        console.log("🧹 RouteList cleanup: GPS + channel closed safely");
       } catch (err) {
-        console.warn("⚠️ Map cleanup error:", err.message);
+        console.warn("⚠️ Cleanup error:", err.message);
       }
     };
-  }, [guardName]);
+  }, []);
 
   // Safe marker/polyline cleanup
   useEffect(() => {
@@ -260,6 +213,24 @@ export default function RouteList() {
     }
   };
 
+  const handleSelfieOut = async () => {
+    try {
+      // existing selfie out logic
+      localStorage.removeItem("guardName");
+      localStorage.removeItem("plateNo");
+      localStorage.removeItem("registered");
+      setRegistered(false);
+      setGuardName("");
+      setPlateNo("");
+      
+      closeGuardChannel();
+      console.log("✅ Selfie Out success, channel closed");
+      setTimeout(() => navigate("/guard/dashboard"), 500); // delay smooth transition
+    } catch (err) {
+      console.warn("⚠️ Selfie Out error:", err.message);
+    }
+  };
+
   const captureSelfie = async () => {
     try {
       if (!videoRef.current) return;
@@ -287,12 +258,7 @@ export default function RouteList() {
 
       toast.success("✅ Selfie sent!");
       if (selfieType === "selfieOut") {
-        localStorage.removeItem("guardName");
-        localStorage.removeItem("plateNo");
-        localStorage.removeItem("registered");
-        setRegistered(false);
-        setGuardName("");
-        setPlateNo("");
+        await handleSelfieOut();
       }
     } catch (err) {
       console.error("Selfie error:", err);
