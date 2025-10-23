@@ -105,6 +105,8 @@ export default function RouteList() {
   const isMounted = useRef(true);
   const markerRef = useRef(null);
   const polylineRef = useRef(null);
+  const mapRef = useRef(null); // ✅ added for stable map cleanup reference
+
 
   // ✅ New state to mark house as done
   const [doneHouseIds, setDoneHouseIds] = useState([]);
@@ -274,48 +276,55 @@ export default function RouteList() {
   const handleSelfieOut = async () => {
     try {
       console.log("📷 Selfie Out initiated");
-
-      try {
-        if (gpsWatchId) {
+  
+      // 🧭 Stop GPS safely
+      if (gpsWatchId) {
+        try {
           navigator.geolocation.clearWatch(gpsWatchId);
           console.log("🧭 GPS tracking stopped safely on Selfie Out");
           gpsWatchId = null;
-        } else {
-          console.warn("⚠️ GPS watchId not found, skipping clearWatch()");
+        } catch (gpsErr) {
+          console.warn("⚠️ GPS clearWatch failed:", gpsErr.message);
         }
-      } catch (gpsErr) {
-        console.error("⚠️ GPS clearWatch error:", gpsErr.message);
       }
-
-      // Stop Leaflet map safely
-      if (mapRef?.current) {
-        try {
-          mapRef.current.stop(); // stop animations like flyTo()
+  
+      // 🗺️ Cleanup map only if exists
+      try {
+        if (mapRef.current) {
+          console.log("🧹 Cleaning map layers before exit...");
           mapRef.current.eachLayer((layer) => {
             if (layer instanceof L.Marker || layer instanceof L.Polyline) {
               mapRef.current.removeLayer(layer);
             }
           });
           mapRef.current.off();
+          mapRef.current.stop();
           mapRef.current.remove();
           mapRef.current = null;
-          console.log("🧹 Route map cleaned safely before exit");
-        } catch (mapErr) {
-          console.warn("⚠️ Leaflet cleanup error:", mapErr.message);
+        } else {
+          console.log("⚠️ No mapRef found — skipping map cleanup");
         }
+      } catch (mapErr) {
+        console.warn("⚠️ Map cleanup error:", mapErr.message);
       }
-
-      // Close Supabase channel
-      closeGuardChannel();
-      console.log("🧹 Guard channel closed safely");
-
-      // Navigate back to dashboard
-      setTimeout(() => navigate("/guard/dashboard"), 500);
+  
+      // 🛰️ Close realtime safely
+      try {
+        closeGuardChannel();
+        console.log("🧹 Guard channel closed safely");
+      } catch (chErr) {
+        console.warn("⚠️ Channel cleanup error:", chErr.message);
+      }
+  
+      // ✅ Return to dashboard
+      toast.success("✅ Patrol ended successfully");
+      setTimeout(() => navigate("/guard/dashboard"), 800);
     } catch (err) {
       console.error("❌ Selfie Out critical error:", err.message);
+      toast.error("Selfie Out failed: " + err.message);
     }
   };
-
+  
   const captureSelfie = async () => {
     try {
       if (!videoRef.current) return;
@@ -488,11 +497,12 @@ export default function RouteList() {
 
           {/* Map Section */}
           <div className="h-[360px] w-full rounded-2xl overflow-hidden shadow-md border border-gray-200 bg-white relative z-0">
-            <MapContainer
-              center={guardPos || [5.65, 100.5]}
-              zoom={16}
-              style={{ height: "100%", width: "100%" }}
-            >
+                <MapContainer
+                ref={mapRef} // ✅ link to mapRef for safe cleanup
+                center={guardPos || [5.65, 100.5]}
+                zoom={16}
+                style={{ height: "100%", width: "100%" }}
+              >
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution="&copy; OpenStreetMap"
