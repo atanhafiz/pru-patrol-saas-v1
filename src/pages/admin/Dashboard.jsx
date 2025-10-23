@@ -6,11 +6,8 @@ import { sendTelegramPhoto } from "../../lib/telegram";
 import {
   ShieldCheck,
   ClipboardCheck,
-  Activity,
   Bell,
   Users,
-  MapPin,
-  Trash2,
 } from "lucide-react";
 
 import MapRealtime from "../../components/shared/MapRealtime";
@@ -22,7 +19,6 @@ import AdminLayout_Clean from "../../layouts/AdminLayout_Clean";
 
 
 export default function Dashboard() {
-  const [activityLogs, setActivityLogs] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [attendanceToday, setAttendanceToday] = useState(0);
   const [activePatrols, setActivePatrols] = useState(0);
@@ -30,35 +26,10 @@ export default function Dashboard() {
   const [incidentsToday, setIncidentsToday] = useState(0);
 
   useEffect(() => {
-    fetchLogs();
     fetchAssignments();
     fetchDashboardMetrics();
-
-    const channel = supabase
-      .channel("activity_log_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "activity_log" },
-        () => fetchLogs()
-      )
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
   }, []);
 
-  const fetchLogs = async () => {
-    const { data, error } = await supabase
-      .from("activity_log")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (!error) {
-      setActivityLogs(data || []);
-      console.log("✅ Supabase activity_log fetched:", data?.length);
-    } else {
-      console.error("❌ Supabase activity_log error:", error.message);
-    }
-  };
 
   const fetchAssignments = async () => {
     const { data, error } = await supabase
@@ -111,16 +82,6 @@ export default function Dashboard() {
     }
   };
 
-  const clearStatus = async () => {
-    if (!confirm("Are you sure you want to clear all logs?")) return;
-    const { error } = await supabase.from("activity_log").delete().neq("id", 0);
-    if (!error) {
-      alert("✅ All activity logs cleared!");
-      fetchLogs();
-    } else {
-      alert("❌ Failed to clear logs: " + error.message);
-    }
-  };
 
   const clearTodayTasks = async () => {
     if (!confirm("Clear today's completed tasks?")) return;
@@ -238,94 +199,6 @@ export default function Dashboard() {
         <RouteAssignment />
         <RouteStatusAlert />
 
-        {/* Activity Log */}
-        <motion.div
-          className="bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm p-4 sm:p-5 mt-10"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-[#0B132B] flex items-center gap-2">
-              <Activity className="w-5 h-5 text-accent" /> 📜 Activity Log
-            </h2>
-            <div className="flex gap-2">
-              {allCompletedToday && (
-                <button
-                  onClick={clearTodayTasks}
-                  className="bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white px-3 py-1.5 rounded-lg text-sm"
-                >
-                  🧹 Clear Today's Task
-                </button>
-              )}
-              <button
-                onClick={clearStatus}
-                className="flex items-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white px-3 py-1.5 rounded-lg text-sm"
-              >
-                <Trash2 className="w-4 h-4" /> 🧹 Clear Status
-              </button>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-gray-200 rounded-lg">
-              <thead className="bg-gray-100 text-left">
-                <tr>
-                  <th className="p-3 font-semibold text-gray-700">Type</th>
-                  <th className="p-3 font-semibold text-gray-700">
-                    Description
-                  </th>
-                  <th className="p-3 font-semibold text-gray-700">Guard</th>
-                  <th className="p-3 font-semibold text-gray-700">Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activityLogs.length > 0 ? (
-                  activityLogs.map((log, idx) => (
-                    <motion.tr
-                      key={log.id}
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * idx }}
-                    >
-                      <td className="p-3">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            log.type === "checkin"
-                              ? "bg-green-100 text-green-800"
-                              : log.type === "checkout"
-                              ? "bg-red-100 text-red-800"
-                              : log.type === "patrol"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {log.type}
-                        </span>
-                      </td>
-                      <td className="p-3 text-gray-700">
-                        {log.description}
-                      </td>
-                      <td className="p-3 font-medium text-gray-800">
-                        {log.guard_name}
-                      </td>
-                      <td className="p-3 text-gray-600">
-                        {new Date(log.time).toLocaleString()}
-                      </td>
-                    </motion.tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="p-6 text-center text-sm text-gray-500 italic">
-                      No activity logs found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
 
         <motion.div
           className="text-center mt-12 text-gray-400 text-sm"
