@@ -72,7 +72,6 @@ export default function RouteList() {
   const canvasRef = useRef(null);
   
   // Polyline tracking refs
-  const polylineRef = useRef(null);
   const routeCoords = useRef([]);
   const routePoints = useRef([]);
   
@@ -85,9 +84,19 @@ export default function RouteList() {
   // Map stability refs for smooth updates
   const lastFlyTime = useRef(0);
   const lastPolylineUpdate = useRef(0);
+  
+  // Field stability refs
+  const isMounted = useRef(true);
+  const markerRef = useRef(null);
+  const polylineRef = useRef(null);
 
   // ✅ New state to mark house as done
   const [doneHouseIds, setDoneHouseIds] = useState([]);
+
+  // Unmount cleanup
+  useEffect(() => {
+    return () => { isMounted.current = false; };
+  }, []);
 
   // 🛰️ GPS & Assignments
   useEffect(() => {
@@ -125,28 +134,41 @@ export default function RouteList() {
         });
         console.log("🛰️ GUARD: location broadcasted", { lat, lng, guardName });
         
-        // Auto center map on first selfie in with debounce
-        if (routePoints.current.length === 0) {
-          routePoints.current.push([lat, lng]);
-          // Note: Map centering will be handled by MapCenter component
-        } else {
-          routePoints.current.push([lat, lng]);
-        }
+        // Prevent updates after unmount
+        if (!isMounted.current) return;
         
-        // 🧭 Map stability: Limit flyTo to every 2 seconds
+        // Add to route points
+        routePoints.current.push([lat, lng]);
+        
+        // 🧭 Limit flyTo every 3s to avoid lag
         const now = Date.now();
-        if (now - lastFlyTime.current > 2000) {
+        if (mapRef?.current && now - lastFlyTime.current > 3000) {
           lastFlyTime.current = now;
-          // This will be handled by MapCenter component in the guard's own map
+          mapRef.current.setView([lat, lng], 18, { animate: false });
         }
         
-        // 🛣️ Update polyline only every 1.5s for stability
-        if (now - lastPolylineUpdate.current > 1500) {
-          lastPolylineUpdate.current = now;
-          if (polylineRef.current) {
-            polylineRef.current.setLatLngs(routePoints.current);
+        // 🧩 Marker creation/update
+        if (mapRef?.current) {
+          if (!markerRef.current) {
+            markerRef.current = L.marker([lat, lng])
+              .addTo(mapRef.current)
+              .bindPopup(guardName || "Guard Active");
           } else {
-            polylineRef.current = L.polyline(routePoints.current, { color: "green", weight: 4 }).addTo(mapRef.current);
+            markerRef.current.setLatLng([lat, lng]);
+          }
+        }
+        
+        // 🛣️ Polyline drawing (stable)
+        if (mapRef?.current) {
+          if (!polylineRef.current) {
+            polylineRef.current = L.polyline(routePoints.current, {
+              color: "green",
+              weight: 4,
+              opacity: 0.9,
+              smoothFactor: 1.2,
+            }).addTo(mapRef.current);
+          } else {
+            polylineRef.current.setLatLngs(routePoints.current);
           }
         }
       },
@@ -155,9 +177,26 @@ export default function RouteList() {
     );
     
     return () => {
-      console.log("🧹 Route tracking unsubscribed safely");
+      console.log("🧹 Cleanup: stopping GPS & removing map layers");
+      
+      isMounted.current = false;
+      
       navigator.geolocation.clearWatch(watch);
       supabase.removeChannel(channel);
+      
+      // Clean up map layers safely
+      try {
+        if (markerRef.current) {
+          mapRef.current?.removeLayer(markerRef.current);
+          markerRef.current = null;
+        }
+        if (polylineRef.current) {
+          mapRef.current?.removeLayer(polylineRef.current);
+          polylineRef.current = null;
+        }
+      } catch (err) {
+        console.warn("⚠️ Map cleanup error:", err.message);
+      }
     };
   }, [guardName]);
 
