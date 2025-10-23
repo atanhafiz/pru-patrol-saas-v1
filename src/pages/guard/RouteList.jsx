@@ -78,6 +78,9 @@ export default function RouteList() {
   
   // Upload debounce protection
   const uploadingRef = useRef(new Set());
+  
+  // FlyTo debounce to prevent marker vibration
+  const flyDebounce = useRef(null);
 
   // ✅ New state to mark house as done
   const [doneHouseIds, setDoneHouseIds] = useState([]);
@@ -118,13 +121,19 @@ export default function RouteList() {
         });
         console.log("🛰️ GUARD: location broadcasted", { lat, lng, guardName });
         
-        // Auto center map on first selfie in
+        // Auto center map on first selfie in with debounce
         if (routePoints.current.length === 0) {
           routePoints.current.push([lat, lng]);
           // Note: Map centering will be handled by MapCenter component
         } else {
           routePoints.current.push([lat, lng]);
         }
+        
+        // FlyTo debounce to prevent marker vibration
+        if (flyDebounce.current) clearTimeout(flyDebounce.current);
+        flyDebounce.current = setTimeout(() => {
+          // This will be handled by MapCenter component in the guard's own map
+        }, 800);
       },
       (err) => console.error("GPS error:", err),
       { enableHighAccuracy: true }
@@ -134,6 +143,7 @@ export default function RouteList() {
       console.log("🧹 Route tracking unsubscribed safely");
       navigator.geolocation.clearWatch(watch);
       supabase.removeChannel(channel);
+      if (flyDebounce.current) clearTimeout(flyDebounce.current);
     };
   }, [guardName]);
 

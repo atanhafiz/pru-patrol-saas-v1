@@ -21,10 +21,10 @@ export default function MapRealtime({ isTrackingPaused = false }) {
   const markerRef = useRef(null);
   const polylineRef = useRef(null);
   const routePoints = useRef([]);
+  const channelRef = useRef(null);
   const [guards, setGuards] = useState([]);
   const markersRef = useRef(new Map()); // Store multiple markers by guard ID
   const prevPositionRef = useRef(null); // Store previous position for speed calculation
-  const subscribedRef = useRef(false); // Prevent multiple subscriptions
   const mountedRef = useRef(true); // Prevent operations on unmounted component
 
   useEffect(() => {
@@ -49,157 +49,83 @@ export default function MapRealtime({ isTrackingPaused = false }) {
     // Initialize map immediately or with a small delay
     setTimeout(initMap, 100);
 
-    // Subscribe to real-time location updates with auto-reconnect
-    if (!subscribedRef.current) {
-      subscribedRef.current = true;
-      
-      // Clean up old channels before subscribing
-      supabase.removeAllChannels();
-      console.log("🧹 Cleaned old Supabase channels before subscribing");
-      
-      const subscribeToGuardChannel = () => {
-        console.log("🛰️ MAP: subscribing guard_location...");
-        const channel = supabase
-          .channel("guard_location", { config: { broadcast: { ack: false } } })
-          .on("broadcast", { event: "location_update" }, ({ payload }) => {
-            console.log("🛰️ MAP: incoming payload", payload);
-            
-            // 🧭 [DEBUG] First payload check
-            console.log("🧭 [DEBUG] First payload check →",
-              "map:", !!mapRef.current,
-              "points:", routePoints.current.length,
-              "paused:", isTrackingPaused,
-              "lat:", payload.lat, "lng:", payload.lng
-            );
-            
-            if (!mapRef.current) return; // prevent calling before map is ready
-            if (isTrackingPaused) return; // skip marker redraw if tracking paused
-            
-            const { lat, lng, id, name, status } = payload;
-            
-            if (lat && lng) {
-              console.log("🛰️ MAP: new position", { lat, lng, id });
-              
-              // Handle marker creation and updates
-              if (!markerRef.current) {
-                markerRef.current = L.marker([lat, lng]).addTo(mapRef.current);
-                markerRef.current.bindPopup("Guard Active").openPopup();
-                
-                // ✅ Auto-center map to guard location
-                mapRef.current.setView([lat, lng], 18, { animate: true });
-                console.log("🛰️ MAP: marker created & map centered");
-              } else {
-                markerRef.current.setLatLng([lat, lng]);
-                console.log("🛰️ MAP: marker updated", { lat, lng });
-              }
-              
-              // Add to route coordinates
-              routePoints.current.push([lat, lng]);
-              console.log("🛰️ MAP: route points", routePoints.current.length);
-              
-              // Auto flyTo zoom on first guard broadcast
-              if (routePoints.current.length === 1 && mapRef.current) {
-                console.log("🌀 Admin map auto-centering to first guard position");
-                mapRef.current.flyTo([lat, lng], 17, { animate: true, duration: 1.5 });
-              }
-              
-              // Calculate speed if we have previous position
-              let speedKmh = 0;
-              if (prevPositionRef.current) {
-                const prevPos = prevPositionRef.current;
-                const distance = L.latLng(prevPos.lat, prevPos.lng).distanceTo(L.latLng(lat, lng));
-                const timeDiff = (Date.now() - prevPos.timestamp) / 1000; // seconds
-                if (timeDiff > 0) {
-                  speedKmh = Math.abs(distance / timeDiff) * 3.6; // Convert m/s to km/h
-                }
-              }
-              
-              // Store current position for next calculation
-              prevPositionRef.current = { lat, lng, timestamp: Date.now() };
-              
-              // Calculate speed-based color
-              let speedColor = "green";
-              if (speedKmh >= 10 && speedKmh < 40) speedColor = "orange";
-              else if (speedKmh >= 40) speedColor = "red";
-              
-              // Update or create polyline with error handling
-              if (routePoints.current.length > 1) {
-                if (polylineRef.current) {
-                  try {
-                    polylineRef.current.setLatLngs(routePoints.current);
-                    polylineRef.current.setStyle({ color: speedColor });
-                    console.log("🛰️ MAP: polyline updated with", routePoints.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", speedColor);
-                  } catch (e) {
-                    console.warn("⚠️ Polyline update skipped (map still animating)");
-                  }
-                } else {
-                  polylineRef.current = L.polyline(routePoints.current, {
-                    color: speedColor,
-                    weight: 5,
-                    opacity: 0.9,
-                  }).addTo(mapRef.current);
-                  
-                  console.log("🛰️ MAP: polyline created with", routePoints.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", speedColor);
-                }
-              }
-            }
-            
-            // Update guards state
-            setGuards(prev => 
-              prev.map(g => 
-                g.id === id 
-                  ? { ...g, lat, lng, name, status }
-                  : g
-              )
-            );
-          })
-          .subscribe((status) => {
-            if (status === "CLOSED") {
-              console.warn("⚠️ MAP channel closed — retrying in 3s...");
-              setTimeout(subscribeToGuardChannel, 3000);
-            }
-          });
-        return channel;
-      };
+    // Subscribe to real-time location updates with safe channel pattern
+    if (channelRef.current) return; // Prevent double subscription
 
-      const channel = subscribeToGuardChannel();
-      
-      // Cleanup on unmount
-      return () => {
-        mountedRef.current = false;
-        console.log("🧹 Route tracking unsubscribed safely");
+    console.log("🛰️ MAP: subscribing guard_location channel...");
+
+    const channel = supabase.channel("guard_location", { config: { broadcast: { self: false } } })
+      .on("broadcast", { event: "location_update" }, (payload) => {
+        console.log("🛰️ MAP: incoming payload", payload.payload);
+        const { lat, lng, name } = payload.payload || {};
+        if (!mapRef.current || !lat || !lng) return;
+
+        // 🧭 [DEBUG] First payload check
+        console.log("🧭 [DEBUG] First payload check →",
+          "map:", !!mapRef.current,
+          "points:", routePoints.current.length,
+          "paused:", isTrackingPaused,
+          "lat:", lat, "lng:", lng
+        );
+
+        // store route points
+        routePoints.current.push([lat, lng]);
+
+        // update marker with safety
         try {
-          if (mapRef.current && mapRef.current.remove) {
-            mapRef.current.remove();
-            console.log("🧹 Map removed safely");
+          if (!markerRef.current) {
+            markerRef.current = L.marker([lat, lng]).addTo(mapRef.current).bindPopup(name || "Guard Active");
+            mapRef.current.flyTo([lat, lng], 17, { animate: true, duration: 1.2 });
+          } else {
+            markerRef.current.setLatLng([lat, lng]);
           }
         } catch (err) {
-          console.warn("🧹 Cleanup skipped:", err.message);
+          console.warn("⚠️ MAP marker render error", err.message);
         }
-        // Clean up single marker
-        if (markerRef.current) {
-          try {
-            mapRef.current?.removeLayer(markerRef.current);
-            markerRef.current = null;
-          } catch (err) {
-            console.warn("🧹 Marker cleanup skipped:", err.message);
-          }
+
+        // update polyline
+        if (polylineRef.current) mapRef.current.removeLayer(polylineRef.current);
+        polylineRef.current = L.polyline(routePoints.current, { color: "green", weight: 4 }).addTo(mapRef.current);
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    // Cleanup on unmount
+    return () => {
+      mountedRef.current = false;
+      console.log("🧹 MAP: cleaning single channel guard_location");
+      try {
+        if (mapRef.current && mapRef.current.remove) {
+          mapRef.current.remove();
+          console.log("🧹 Map removed safely");
         }
-        // Clean up all markers from Map
-        markersRef.current.forEach(marker => {
-          try {
-            if (marker) mapRef.current?.removeLayer(marker);
-          } catch (err) {
-            console.warn("🧹 Marker cleanup skipped:", err.message);
-          }
-        });
-        markersRef.current.clear();
-        polylineRef.current = null;
-        routePoints.current = [];
-        supabase.removeChannel(channel);
-        subscribedRef.current = false;
-      };
-    }
+      } catch (err) {
+        console.warn("🧹 Cleanup skipped:", err.message);
+      }
+      // Clean up single marker
+      if (markerRef.current) {
+        try {
+          mapRef.current?.removeLayer(markerRef.current);
+          markerRef.current = null;
+        } catch (err) {
+          console.warn("🧹 Marker cleanup skipped:", err.message);
+        }
+      }
+      // Clean up all markers from Map
+      markersRef.current.forEach(marker => {
+        try {
+          if (marker) mapRef.current?.removeLayer(marker);
+        } catch (err) {
+          console.warn("🧹 Marker cleanup skipped:", err.message);
+        }
+      });
+      markersRef.current.clear();
+      polylineRef.current = null;
+      routePoints.current = [];
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
   }, []);
 
   return (
