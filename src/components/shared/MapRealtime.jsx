@@ -28,6 +28,7 @@ export default function MapRealtime({ isTrackingPaused = false }) {
   const markersRef = useRef(new Map()); // Store multiple markers by guard ID
   const prevPositionRef = useRef(null); // Store previous position for speed calculation
   const mountedRef = useRef(true); // Prevent operations on unmounted component
+  const lastUpdateRef = useRef(0); // Debounce updates
 
   useEffect(() => {
     mountedRef.current = true;
@@ -76,30 +77,73 @@ export default function MapRealtime({ isTrackingPaused = false }) {
         try {
           const { lat, lng, name } = payload.payload;
           if (!lat || !lng) return;
+          
+          // Debounce updates to prevent excessive redraws
+          const now = Date.now();
+          if (now - lastUpdateRef.current < 1000) return; // Update max once per second
+          lastUpdateRef.current = now;
 
-          // Update marker safely
+          // Update marker safely with proper icon handling
           if (!markerRef.current) {
+            // Create custom icon with fallback
+            const guardIcon = L.icon({
+              iconUrl: "/images/guard-icon.png",
+              iconSize: [40, 40],
+              iconAnchor: [20, 40],
+              popupAnchor: [0, -40],
+            });
+            
+            // Add error handling for missing icon
+            guardIcon.on('error', () => {
+              console.warn('Guard icon not found, using default marker');
+              markerRef.current.setIcon(L.divIcon({
+                className: 'custom-guard-marker',
+                html: '<div style="background-color: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+              }));
+            });
+            
             markerRef.current = L.marker([lat, lng], {
-              icon: L.icon({
-                iconUrl: "/images/guard-icon.png",
-                iconSize: [40, 40],
-                iconAnchor: [20, 40],
-              }),
+              icon: guardIcon,
             }).addTo(mapRef.current);
+            
+            // Bind popup with guard info
+            markerRef.current.bindPopup(`
+              <div class="text-center">
+                <b>${name || 'Guard Active'}</b><br/>
+                <small>Status: Patrolling</small>
+              </div>
+            `);
+            
             console.log("🛰️ MAP: marker created & map centered");
-            mapRef.current.flyTo([lat, lng], 17, { animate: true, duration: 1.5 });
+            // Auto-center map on first location
+            mapRef.current.flyTo([lat, lng], 17, { 
+              animate: true, 
+              duration: 1.5,
+              easeLinearity: 0.25
+            });
           } else {
             markerRef.current.setLatLng([lat, lng]);
             console.log("🛰️ MAP: marker updated", { lat, lng });
           }
 
-          // Update polyline route points safely
+          // Update polyline route points safely - use single polyline instead of segments
           routePoints.current.push([lat, lng]);
+          
+          // Create or update single polyline instead of multiple segments
           if (routePoints.current.length > 1) {
-            const lastTwo = routePoints.current.slice(-2);
-            const segment = L.polyline(lastTwo, { color: "green", weight: 4 }).addTo(mapRef.current);
-            if (!routeRef.current) routeRef.current = [];
-            routeRef.current.push(segment);
+            if (!polylineRef.current) {
+              // Create new polyline
+              polylineRef.current = L.polyline(routePoints.current, { 
+                color: "green", 
+                weight: 4,
+                opacity: 0.8
+              }).addTo(mapRef.current);
+            } else {
+              // Update existing polyline
+              polylineRef.current.setLatLngs(routePoints.current);
+            }
           }
         } catch (err) {
           console.warn("⚠️ MAP update skipped:", err.message);
@@ -139,7 +183,16 @@ export default function MapRealtime({ isTrackingPaused = false }) {
         }
       });
       markersRef.current.clear();
-      polylineRef.current = null;
+      
+      // Clean up single polyline
+      if (polylineRef.current) {
+        try {
+          mapRef.current?.removeLayer(polylineRef.current);
+        } catch (err) {
+          console.warn("🧹 Polyline cleanup skipped:", err.message);
+        }
+        polylineRef.current = null;
+      }
       routePoints.current = [];
       supabase.removeChannel(channel);
       channelRef.current = null;

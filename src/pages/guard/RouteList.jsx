@@ -114,6 +114,13 @@ export default function RouteList() {
     return () => { isMounted.current = false; };
   }, []);
 
+  // Fetch assignments when guard name changes
+  useEffect(() => {
+    if (guardName) {
+      fetchAssignments();
+    }
+  }, [guardName]);
+
   // ✅ Safety cleanup untuk GPS + Map + Channel
   useEffect(() => {
     let watchId = null;
@@ -204,6 +211,7 @@ export default function RouteList() {
       const { data, error } = await supabase
         .from("patrol_assignments")
         .select("*")
+        .eq("guard_name", guardName)
         .order("session_no", { ascending: true });
       if (error) throw error;
       setAssignments(data || []);
