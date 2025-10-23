@@ -59,7 +59,13 @@ export default function Dashboard() {
       const { count: reportsCount, error: reportsError } = await supabase
         .from("incidents")
         .select("*", { count: "exact" })
-        .eq("status", "active");
+        // comment this line:
+// .eq("status", "active")
+
+// terus select semua
+.from("incidents")
+.select("*", { count: "exact" })
+
       if (reportsError) {
         console.error("❌ Supabase incidents (active) error:", reportsError.message);
       } else {

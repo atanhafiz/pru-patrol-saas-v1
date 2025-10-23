@@ -94,16 +94,13 @@ export default function MapRealtime({ isTrackingPaused = false }) {
             });
             
             // Add error handling for missing icon
-            guardIcon.on('error', () => {
-              console.warn('Guard icon not found, using default marker');
-              markerRef.current.setIcon(L.divIcon({
-                className: 'custom-guard-marker',
-                html: '<div style="background-color: #3b82f6; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
-              }));
+            const guardIcon = L.icon({
+              iconUrl: "/images/guard-icon.png",
+              iconSize: [40, 40],
+              iconAnchor: [20, 40],
+              popupAnchor: [0, -40],
             });
-            
+                        
             markerRef.current = L.marker([lat, lng], {
               icon: guardIcon,
             }).addTo(mapRef.current);
