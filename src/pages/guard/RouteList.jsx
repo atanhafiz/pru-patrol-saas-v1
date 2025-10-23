@@ -81,6 +81,10 @@ export default function RouteList() {
   
   // FlyTo debounce to prevent marker vibration
   const flyDebounce = useRef(null);
+  
+  // Map stability refs for smooth updates
+  const lastFlyTime = useRef(0);
+  const lastPolylineUpdate = useRef(0);
 
   // ✅ New state to mark house as done
   const [doneHouseIds, setDoneHouseIds] = useState([]);
@@ -129,11 +133,22 @@ export default function RouteList() {
           routePoints.current.push([lat, lng]);
         }
         
-        // FlyTo debounce to prevent marker vibration
-        if (flyDebounce.current) clearTimeout(flyDebounce.current);
-        flyDebounce.current = setTimeout(() => {
+        // 🧭 Map stability: Limit flyTo to every 2 seconds
+        const now = Date.now();
+        if (now - lastFlyTime.current > 2000) {
+          lastFlyTime.current = now;
           // This will be handled by MapCenter component in the guard's own map
-        }, 800);
+        }
+        
+        // 🛣️ Update polyline only every 1.5s for stability
+        if (now - lastPolylineUpdate.current > 1500) {
+          lastPolylineUpdate.current = now;
+          if (polylineRef.current) {
+            polylineRef.current.setLatLngs(routePoints.current);
+          } else {
+            polylineRef.current = L.polyline(routePoints.current, { color: "green", weight: 4 }).addTo(mapRef.current);
+          }
+        }
       },
       (err) => console.error("GPS error:", err),
       { enableHighAccuracy: true }
@@ -143,7 +158,6 @@ export default function RouteList() {
       console.log("🧹 Route tracking unsubscribed safely");
       navigator.geolocation.clearWatch(watch);
       supabase.removeChannel(channel);
-      if (flyDebounce.current) clearTimeout(flyDebounce.current);
     };
   }, [guardName]);
 
