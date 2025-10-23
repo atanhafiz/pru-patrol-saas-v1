@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import { getGuardChannel, closeGuardChannel } from "../../lib/guardChannel";
 import { sendTelegramPhoto } from "../../shared/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -102,13 +103,8 @@ export default function RouteList() {
   useEffect(() => {
     fetchAssignments();
     
-    // Clean up old channels before subscribing
-    supabase.removeAllChannels();
-    console.log("🧹 Cleaned old Supabase channels before subscribing");
-    
     // Set up GPS tracking and realtime broadcasting
-    const channel = supabase.channel("guard_location", { config: { broadcast: { ack: false } } });
-    channel.subscribe();
+    const channel = getGuardChannel();
     console.log("🛰️ GUARD: channel subscribed guard_location");
     
     const watch = navigator.geolocation.watchPosition(
@@ -182,7 +178,7 @@ export default function RouteList() {
       isMounted.current = false;
       
       navigator.geolocation.clearWatch(watch);
-      supabase.removeChannel(channel);
+      closeGuardChannel();
       
       // Clean up map layers safely
       try {
