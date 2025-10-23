@@ -140,8 +140,23 @@ export default function RouteList() {
     return () => {
       try {
         isUnmounted = true;
+
+        // ✅ Safeguard against double cleanup
         if (watchId) navigator.geolocation.clearWatch(watchId);
+
+        // ✅ Only cleanup map if exists and not removed yet
+        if (mapRef?.current && mapRef.current._container) {
+          try {
+            mapRef.current.remove();
+            console.log("🧹 Map removed safely (once)");
+          } catch (err) {
+            console.warn("⚠️ Map already removed, skipping...");
+          }
+        }
+
+        // ✅ Close channel safely
         closeGuardChannel();
+
         console.log("🧹 RouteList cleanup: GPS + channel closed safely");
       } catch (err) {
         console.warn("⚠️ Cleanup error:", err.message);
