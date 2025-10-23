@@ -89,6 +89,12 @@ export default function MapRealtime({ isTrackingPaused = false }) {
               routePoints.current.push([lat, lng]);
               console.log("🛰️ MAP: route points", routePoints.current.length);
               
+              // Auto flyTo zoom on first guard broadcast
+              if (routePoints.current.length === 1 && mapRef.current) {
+                console.log("🌀 Admin map auto-centering to first guard position");
+                mapRef.current.flyTo([lat, lng], 17, { animate: true, duration: 1.5 });
+              }
+              
               // Calculate speed if we have previous position
               let speedKmh = 0;
               if (prevPositionRef.current) {
