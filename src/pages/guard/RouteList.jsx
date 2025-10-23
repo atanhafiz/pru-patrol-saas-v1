@@ -230,19 +230,36 @@ export default function RouteList() {
 
   const handleSelfieOut = async () => {
     try {
-      // existing selfie out logic
-      localStorage.removeItem("guardName");
-      localStorage.removeItem("plateNo");
-      localStorage.removeItem("registered");
-      setRegistered(false);
-      setGuardName("");
-      setPlateNo("");
-      
+      console.log("📷 Selfie Out initiated");
+      // Stop GPS tracking
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+
+      // Stop Leaflet map safely
+      if (mapRef?.current) {
+        try {
+          mapRef.current.stop(); // stop animations like flyTo()
+          mapRef.current.eachLayer((layer) => {
+            if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+              mapRef.current.removeLayer(layer);
+            }
+          });
+          mapRef.current.off();
+          mapRef.current.remove();
+          mapRef.current = null;
+          console.log("🧹 Route map cleaned safely before exit");
+        } catch (mapErr) {
+          console.warn("⚠️ Leaflet cleanup error:", mapErr.message);
+        }
+      }
+
+      // Close Supabase channel
       closeGuardChannel();
-      console.log("✅ Selfie Out success, channel closed");
-      setTimeout(() => navigate("/guard/dashboard"), 500); // delay smooth transition
+      console.log("🧹 Guard channel closed safely");
+
+      // Navigate back to dashboard
+      setTimeout(() => navigate("/guard/dashboard"), 500);
     } catch (err) {
-      console.warn("⚠️ Selfie Out error:", err.message);
+      console.error("❌ Selfie Out critical error:", err.message);
     }
   };
 
