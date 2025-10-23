@@ -209,11 +209,11 @@ export default function RouteList() {
   const fetchAssignments = async () => {
     try {
       const { data, error } = await supabase
-        .from("patrol_assignments")
-        .select("*")
-        .eq("guard_name", guardName)
-        .order("session_no", { ascending: true });
-      if (error) throw error;
+      .from("patrol_assignments")
+      .select("*")
+      .eq("guard_name", guardName)
+      .order("session_no", { ascending: true });
+          if (error) throw error;
       setAssignments(data || []);
     } catch (err) {
       console.error("Fetch assignment error:", err);
