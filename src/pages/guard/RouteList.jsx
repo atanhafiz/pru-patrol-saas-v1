@@ -116,6 +116,31 @@ export default function RouteList() {
     return () => { isMounted.current = false; };
   }, []);
 
+  // Auto-load guard name from localStorage if not set
+  useEffect(() => {
+    const savedGuard = localStorage.getItem("guardName");
+    if (!guardName && savedGuard) {
+      setGuardName(savedGuard);
+      console.log("✅ Guard restored from localStorage:", savedGuard);
+    }
+  }, []);
+
+  // Fetch assignments when guard name changes
+  useEffect(() => {
+    if (guardName) {
+      console.log("✅ Fetch triggered for guard:", guardName);
+      fetchAssignments();
+    }
+  }, [guardName]);
+
+  // Fallback: fetch assignments on mount if guardName is already set
+  useEffect(() => {
+    if (guardName && assignments.length === 0) {
+      console.log("🔄 Fallback fetch for existing guard:", guardName);
+      fetchAssignments();
+    }
+  }, []);
+
   // ✅ Safety cleanup untuk GPS + Map + Channel
   useEffect(() => {
     let watchId = null;
@@ -203,15 +228,17 @@ export default function RouteList() {
 
   const fetchAssignments = async () => {
     try {
+      console.log("🔍 Fetching assignments for guard:", guardName);
       const { data, error } = await supabase
-      .from("patrol_assignments")
-      .select("*")
-      .eq("guard_name", guardName)
-      .order("session_no", { ascending: true });
-          if (error) throw error;
+        .from("patrol_assignments")
+        .select("*")
+        .eq("guard_name", guardName)
+        .order("session_no", { ascending: true });
+      if (error) throw error;
+      console.log("✅ Supabase patrol_assignments fetched:", data?.length || 0, "assignments");
       setAssignments(data || []);
     } catch (err) {
-      console.error("Fetch assignment error:", err);
+      console.error("❌ Fetch assignment error:", err);
       toast.error("Failed to load assignments");
     }
   };

@@ -92,14 +92,6 @@ export default function MapRealtime({ isTrackingPaused = false }) {
               iconAnchor: [20, 40],
               popupAnchor: [0, -40],
             });
-            
-            // Add error handling for missing icon
-            const guardIcon = L.icon({
-              iconUrl: "/images/guard-icon.png",
-              iconSize: [40, 40],
-              iconAnchor: [20, 40],
-              popupAnchor: [0, -40],
-            });
                         
             markerRef.current = L.marker([lat, lng], {
               icon: guardIcon,
