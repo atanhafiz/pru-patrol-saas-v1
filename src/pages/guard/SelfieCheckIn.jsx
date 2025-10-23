@@ -14,6 +14,7 @@ export default function SelfieCheckIn_v11() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [guardName, setGuardName] = useState("");
+  const [isTrackingPaused, setIsTrackingPaused] = useState(false);
 
   useEffect(() => {
     let activeStream;
@@ -30,6 +31,7 @@ export default function SelfieCheckIn_v11() {
 
   const startCamera = async () => {
     try {
+      setIsTrackingPaused(true); // Pause tracking during camera
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
       });
@@ -42,6 +44,7 @@ export default function SelfieCheckIn_v11() {
     } catch (err) {
       console.error("❌ Camera access failed:", err.message);
       setStatus(`❌ Failed: ${err.message}`);
+      setIsTrackingPaused(false); // Resume tracking on error
       return null;
     }
   };
@@ -145,6 +148,7 @@ export default function SelfieCheckIn_v11() {
       setStatus("❌ Failed to submit attendance");
     } finally {
       setLoading(false);
+      setIsTrackingPaused(false); // Resume tracking after upload complete
     }
   };
 

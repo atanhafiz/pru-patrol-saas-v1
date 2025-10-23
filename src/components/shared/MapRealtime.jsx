@@ -16,11 +16,11 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-export default function MapRealtime() {
+export default function MapRealtime({ isTrackingPaused = false }) {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const polylineRef = useRef(null);
-  const routeCoordsRef = useRef([]);
+  const routePoints = useRef([]);
   const [guards, setGuards] = useState([]);
   const markersRef = useRef(new Map()); // Store multiple markers by guard ID
   const prevPositionRef = useRef(null); // Store previous position for speed calculation
@@ -53,14 +53,19 @@ export default function MapRealtime() {
     if (!subscribedRef.current) {
       subscribedRef.current = true;
       
+      // Clean up old channels before subscribing
+      supabase.removeAllChannels();
+      console.log("🧹 Cleaned old Supabase channels before subscribing");
+      
       const subscribeToGuardChannel = () => {
         console.log("🛰️ MAP: subscribing guard_location...");
         const channel = supabase
-          .channel("guard_location")
+          .channel("guard_location", { config: { broadcast: { ack: false } } })
           .on("broadcast", { event: "location_update" }, ({ payload }) => {
             console.log("🛰️ MAP: incoming payload", payload);
             
             if (!mapRef.current) return; // prevent calling before map is ready
+            if (isTrackingPaused) return; // skip marker redraw if tracking paused
             
             const { lat, lng, id, name, status } = payload;
             
@@ -81,8 +86,8 @@ export default function MapRealtime() {
               }
               
               // Add to route coordinates
-              routeCoordsRef.current.push([lat, lng]);
-              console.log("🛰️ MAP: route points", routeCoordsRef.current.length);
+              routePoints.current.push([lat, lng]);
+              console.log("🛰️ MAP: route points", routePoints.current.length);
               
               // Calculate speed if we have previous position
               let speedKmh = 0;
@@ -98,35 +103,29 @@ export default function MapRealtime() {
               // Store current position for next calculation
               prevPositionRef.current = { lat, lng, timestamp: Date.now() };
               
+              // Calculate speed-based color
+              let speedColor = "green";
+              if (speedKmh >= 10 && speedKmh < 40) speedColor = "orange";
+              else if (speedKmh >= 40) speedColor = "red";
+              
               // Update or create polyline with error handling
-              if (routeCoordsRef.current.length > 1) {
+              if (routePoints.current.length > 1) {
                 if (polylineRef.current) {
                   try {
-                    polylineRef.current.setLatLngs(routeCoordsRef.current);
-                    
-                    // Update polyline color based on speed
-                    let color = "green";
-                    if (speedKmh >= 10 && speedKmh < 40) color = "orange";
-                    else if (speedKmh >= 40) color = "red";
-                    
-                    polylineRef.current.setStyle({ color });
-                    console.log("🛰️ MAP: polyline updated with", routeCoordsRef.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", color);
+                    polylineRef.current.setLatLngs(routePoints.current);
+                    polylineRef.current.setStyle({ color: speedColor });
+                    console.log("🛰️ MAP: polyline updated with", routePoints.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", speedColor);
                   } catch (e) {
                     console.warn("⚠️ Polyline update skipped (map still animating)");
                   }
                 } else {
-                  // Calculate speed-based color for new polyline
-                  let color = "green";
-                  if (speedKmh >= 10 && speedKmh < 40) color = "orange";
-                  else if (speedKmh >= 40) color = "red";
-                  
-                  polylineRef.current = L.polyline(routeCoordsRef.current, {
-                    color: color,
+                  polylineRef.current = L.polyline(routePoints.current, {
+                    color: speedColor,
                     weight: 5,
-                    opacity: 0.8,
+                    opacity: 0.9,
                   }).addTo(mapRef.current);
                   
-                  console.log("🛰️ MAP: polyline created with", routeCoordsRef.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", color);
+                  console.log("🛰️ MAP: polyline created with", routePoints.current.length, "points, speed:", speedKmh.toFixed(1), "km/h, color:", speedColor);
                 }
               }
             }
@@ -154,6 +153,7 @@ export default function MapRealtime() {
       // Cleanup on unmount
       return () => {
         mountedRef.current = false;
+        console.log("🧹 Route tracking unsubscribed safely");
         try {
           if (mapRef.current && mapRef.current.remove) {
             mapRef.current.remove();
@@ -181,7 +181,7 @@ export default function MapRealtime() {
         });
         markersRef.current.clear();
         polylineRef.current = null;
-        routeCoordsRef.current = [];
+        routePoints.current = [];
         supabase.removeChannel(channel);
         subscribedRef.current = false;
       };

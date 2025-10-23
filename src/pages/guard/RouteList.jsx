@@ -30,13 +30,14 @@ function MapCenter({ center, zoom }) {
 }
 
 // Component to handle polyline drawing
-function PolylineTracker({ center, polylineRef, routeCoords }) {
+function PolylineTracker({ center, polylineRef, routeCoords, routePoints }) {
   const map = useMap();
   
   useEffect(() => {
     if (center && center[0] && center[1]) {
       // Add new coordinate to route
       routeCoords.current.push([center[0], center[1]]);
+      routePoints.current.push([center[0], center[1]]);
       
       // Update or create polyline
       if (polylineRef.current) {
@@ -51,7 +52,7 @@ function PolylineTracker({ center, polylineRef, routeCoords }) {
       
       console.log("🛣️ Route polyline updated:", routeCoords.current.length, "points");
     }
-  }, [center, map, polylineRef, routeCoords]);
+  }, [center, map, polylineRef, routeCoords, routePoints]);
   
   return null;
 }
@@ -66,12 +67,14 @@ export default function RouteList() {
 
   const [showCamera, setShowCamera] = useState(false);
   const [selfieType, setSelfieType] = useState(null);
+  const [isTrackingPaused, setIsTrackingPaused] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   
   // Polyline tracking refs
   const polylineRef = useRef(null);
   const routeCoords = useRef([]);
+  const routePoints = useRef([]);
   
   // Upload debounce protection
   const uploadingRef = useRef(new Set());
@@ -83,13 +86,20 @@ export default function RouteList() {
   useEffect(() => {
     fetchAssignments();
     
+    // Clean up old channels before subscribing
+    supabase.removeAllChannels();
+    console.log("🧹 Cleaned old Supabase channels before subscribing");
+    
     // Set up GPS tracking and realtime broadcasting
-    const channel = supabase.channel("guard_location");
+    const channel = supabase.channel("guard_location", { config: { broadcast: { ack: false } } });
     channel.subscribe();
     console.log("🛰️ GUARD: channel subscribed guard_location");
     
     const watch = navigator.geolocation.watchPosition(
       (pos) => {
+        // Skip tracking if paused during photo snap
+        if (isTrackingPaused) return;
+        
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setGuardPos([lat, lng]);
@@ -107,12 +117,21 @@ export default function RouteList() {
           }
         });
         console.log("🛰️ GUARD: location broadcasted", { lat, lng, guardName });
+        
+        // Auto center map on first selfie in
+        if (routePoints.current.length === 0) {
+          routePoints.current.push([lat, lng]);
+          // Note: Map centering will be handled by MapCenter component
+        } else {
+          routePoints.current.push([lat, lng]);
+        }
       },
       (err) => console.error("GPS error:", err),
       { enableHighAccuracy: true }
     );
     
     return () => {
+      console.log("🧹 Route tracking unsubscribed safely");
       navigator.geolocation.clearWatch(watch);
       supabase.removeChannel(channel);
     };
@@ -159,6 +178,7 @@ export default function RouteList() {
   // 📸 Selfie Modal
   const openSelfie = async (type) => {
     try {
+      setIsTrackingPaused(true); // Pause tracking during camera
       setSelfieType(type);
       setShowCamera(true);
       const facing =
@@ -177,6 +197,7 @@ export default function RouteList() {
       console.error("Camera error:", err);
       toast.error("Camera not accessible. Please allow permission again.");
       setShowCamera(false);
+      setIsTrackingPaused(false); // Resume tracking on error
     }
   };
 
@@ -219,6 +240,7 @@ export default function RouteList() {
       toast.error("Failed to send selfie.");
     } finally {
       setLoading(false);
+      setIsTrackingPaused(false); // Resume tracking after upload complete
     }
   };
 
@@ -233,6 +255,7 @@ export default function RouteList() {
     }
     
     try {
+      setIsTrackingPaused(true); // Pause tracking during photo snap
       uploadingRef.current.add(id);
       setLoading(true);
       const ts = Date.now();
@@ -288,6 +311,7 @@ export default function RouteList() {
     } finally {
       setLoading(false);
       uploadingRef.current.delete(id);
+      setIsTrackingPaused(false); // Resume tracking after upload complete
     }
   };
 
@@ -364,7 +388,7 @@ export default function RouteList() {
                 attribution="&copy; OpenStreetMap"
               />
               <MapCenter center={guardPos} zoom={18} />
-              <PolylineTracker center={guardPos} polylineRef={polylineRef} routeCoords={routeCoords} />
+              <PolylineTracker center={guardPos} polylineRef={polylineRef} routeCoords={routeCoords} routePoints={routePoints} />
               {guardPos && (
                 <Marker 
                   position={guardPos}
@@ -488,6 +512,7 @@ export default function RouteList() {
                   videoRef.current.streamRef.getTracks().forEach((t) => t.stop());
                 }
                 setShowCamera(false);
+                setIsTrackingPaused(false); // Resume tracking when camera closes
               }}
               className="w-full bg-gray-300 text-black py-2 rounded-lg mt-2"
             >
