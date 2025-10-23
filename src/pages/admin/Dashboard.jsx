@@ -194,7 +194,7 @@ export default function Dashboard() {
         </div>
 
         {/* Core Modules */}
-        <MapRealtime />
+        <MapRealtime isTrackingPaused={false} />
         <div className="my-6"></div>
         <RouteAssignment />
         <RouteStatusAlert />

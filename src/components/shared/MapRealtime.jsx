@@ -123,6 +123,17 @@ export default function MapRealtime({ isTrackingPaused = false }) {
               duration: 1.5,
               easeLinearity: 0.25
             });
+
+            // Retry auto-zoom after small delay if map not centered yet
+                setTimeout(() => {
+                  if (mapRef.current && !markerRef.current) {
+                    console.log("🧭 Retry flyTo after delay");
+                    mapRef.current.flyTo([lat, lng], 17, { animate: true, duration: 1.5 });
+                  }
+                }, 2000);
+
+
+        
           } else {
             markerRef.current.setLatLng([lat, lng]);
             console.log("🛰️ MAP: marker updated", { lat, lng });
@@ -132,19 +143,18 @@ export default function MapRealtime({ isTrackingPaused = false }) {
           routePoints.current.push([lat, lng]);
           
           // Create or update single polyline instead of multiple segments
-          if (routePoints.current.length > 1) {
-            if (!polylineRef.current) {
-              // Create new polyline
-              polylineRef.current = L.polyline(routePoints.current, { 
-                color: "green", 
-                weight: 4,
-                opacity: 0.8
-              }).addTo(mapRef.current);
-            } else {
-              // Update existing polyline
-              polylineRef.current.setLatLngs(routePoints.current);
-            }
-          }
+// Update polyline route points safely - single persistent line
+routePoints.current.push([lat, lng]);
+
+if (!polylineRef.current) {
+  polylineRef.current = L.polyline(routePoints.current, {
+    color: "green",
+    weight: 4,
+    opacity: 0.8,
+  }).addTo(mapRef.current);
+} else {
+  polylineRef.current.setLatLngs(routePoints.current);
+}
         } catch (err) {
           console.warn("⚠️ MAP update skipped:", err.message);
         }
@@ -194,8 +204,8 @@ export default function MapRealtime({ isTrackingPaused = false }) {
         polylineRef.current = null;
       }
       routePoints.current = [];
-      supabase.removeChannel(channel);
-      channelRef.current = null;
+// ❌ Skip removing guard_location channel to keep admin sync alive
+console.log("🧹 Skipped Supabase channel removal to maintain realtime tracking");
     };
   }, []);
 
