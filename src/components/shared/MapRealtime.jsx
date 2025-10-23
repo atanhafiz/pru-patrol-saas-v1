@@ -21,7 +21,6 @@ export default function MapRealtime({ isTrackingPaused = false }) {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const polylineRef = useRef(null);
-  const mapRef = useRef(null); // ✅ added for stable map cleanup reference
   const routePoints = useRef([]);
   const routeRef = useRef([]);
   const channelRef = useRef(null);
