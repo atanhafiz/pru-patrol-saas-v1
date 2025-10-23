@@ -115,12 +115,24 @@ export default function RouteList() {
   }, []);
 
   // Fetch assignments when guard name changes
-  useEffect(() => {
-    if (guardName) {
-      fetchAssignments();
+  const fetchAssignments = async (name) => {
+    try {
+      const guardToFetch = name || guardName || localStorage.getItem("guardName");
+      const { data, error } = await supabase
+        .from("patrol_assignments")
+        .select("*")
+        .eq("guard_name", guardToFetch)
+        .order("session_no", { ascending: true });
+  
+      if (error) throw error;
+      console.log("✅ Patrol assignments fetched for:", guardToFetch, data?.length);
+      setAssignments(data || []);
+    } catch (err) {
+      console.error("❌ Fetch assignment error:", err);
+      toast.error("Failed to load assignments");
     }
-  }, [guardName]);
-
+  };
+  
   // ✅ Safety cleanup untuk GPS + Map + Channel
   useEffect(() => {
     let watchId = null;
