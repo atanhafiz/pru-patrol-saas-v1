@@ -82,9 +82,13 @@ export default function HouseSnapUploader({
       await sendTelegramPhoto(photoUrl, caption);
 
       toast.success("✅ Sent to Telegram!");
+      // ✅ Delay tutup modal supaya parent sempat update “Done”
       onUploaded();
-      setOpen(false);
-      setPhotoPreview(null);
+      setTimeout(() => {
+        setOpen(false);
+        setPhotoPreview(null);
+      }, 1000);   
+
     } catch (err) {
       console.error("Upload failed:", err);
       toast.error("Upload failed: " + (err.message || err));
