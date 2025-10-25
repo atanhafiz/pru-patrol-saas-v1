@@ -1,6 +1,5 @@
-// ✅ AHE SmartPatrol Admin Live Map v2.1 (Multi-Guard Stable)
-// Real-time multi-guard tracking + smooth polyline per guard
-// Works seamlessly with guardChannel.js broadcast
+// ✅ AHE SmartPatrol Admin Live Map v2.2 (Stable English + Blue Icon)
+// Real-time multi-guard tracking with custom blue icon from /public/images/guard-icon.jpg
 
 import { useEffect, useRef } from "react";
 import L from "leaflet";
@@ -8,22 +7,22 @@ import { motion } from "framer-motion";
 import { getGuardChannel } from "../../lib/guardChannel";
 import "leaflet/dist/leaflet.css";
 
-// 🧩 Fix Leaflet icons
+// 🧩 Override default Leaflet marker
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconRetinaUrl: "/images/guard-icon.jpg",
+  iconUrl: "/images/guard-icon.jpg",
+  shadowUrl: "",
 });
 
 export default function MapRealtime() {
   const mapRef = useRef(null);
-  const guardMarkersRef = useRef({}); // { guardName: marker }
-  const guardPathsRef = useRef({}); // { guardName: polyline }
-  const routePointsRef = useRef({}); // { guardName: [[lat,lng], ...] }
+  const guardMarkersRef = useRef({});
+  const guardPathsRef = useRef({});
+  const routePointsRef = useRef({});
   const flyToOnce = useRef(new Set());
   const channelRef = useRef(null);
-  const lastUpdateRef = useRef({}); // throttle per guard
+  const lastUpdateRef = useRef({});
 
   useEffect(() => {
     // 🗺️ Initialize Map
@@ -32,7 +31,7 @@ export default function MapRealtime() {
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
       }).addTo(mapRef.current);
-      console.log("🗺️ Map initialized");
+      console.log("🗺️ Admin map initialized");
     }
 
     // 🛰️ Subscribe to realtime guard channel
@@ -48,13 +47,11 @@ export default function MapRealtime() {
         if (now - last < 1500) return; // throttle 1.5s
         lastUpdateRef.current[name] = now;
 
-        // ✅ Create route buffer if not exists
         if (!routePointsRef.current[name]) routePointsRef.current[name] = [];
-
         const points = routePointsRef.current[name];
         const lastPoint = points.at(-1);
 
-        // 🧭 Skip drift <3m
+        // 🧭 Skip small drift (<3m)
         if (
           lastPoint &&
           Math.abs(lat - lastPoint[0]) < 0.00003 &&
@@ -64,14 +61,16 @@ export default function MapRealtime() {
 
         points.push([lat, lng]);
 
+        // ✅ Custom guard icon (blue pin)
+        const guardIcon = L.icon({
+          iconUrl: "/images/guard-icon.jpg", // your custom blue icon
+          iconSize: [38, 38],
+          iconAnchor: [19, 38],
+          popupAnchor: [0, -30],
+        });
+
         // ✅ Create / update marker
         if (!guardMarkersRef.current[name]) {
-          const guardIcon = L.icon({
-            iconUrl: "/images/guard-icon.png", // put in public/images
-            iconSize: [38, 38],
-            iconAnchor: [19, 38],
-            popupAnchor: [0, -30],
-          });
           const marker = L.marker([lat, lng], { icon: guardIcon }).addTo(mapRef.current);
           marker.bindPopup(
             `<b>${name}</b><br/><small>${status || "Patrolling"}</small>`
@@ -79,7 +78,6 @@ export default function MapRealtime() {
           guardMarkersRef.current[name] = marker;
           console.log(`🛰️ Marker created for ${name}`);
 
-          // FlyTo first time only
           if (!flyToOnce.current.has(name)) {
             mapRef.current.flyTo([lat, lng], 17, { animate: true, duration: 1.2 });
             flyToOnce.current.add(name);
@@ -88,12 +86,12 @@ export default function MapRealtime() {
           guardMarkersRef.current[name].setLatLng([lat, lng]);
         }
 
-        // ✅ Update polyline per guard
+        // ✅ Update polyline path
         if (!guardPathsRef.current[name]) {
           guardPathsRef.current[name] = L.polyline(points, {
-            color: "#00b300",
+            color: "#007BFF", // blue path for admin map
             weight: 4,
-            opacity: 0.8,
+            opacity: 0.85,
             smoothFactor: 1,
           }).addTo(mapRef.current);
         } else {
@@ -103,7 +101,7 @@ export default function MapRealtime() {
     );
 
     channelRef.current = channel;
-    console.log("🛰️ Subscribed to guard_location channel");
+    console.log("🛰️ Subscribed to guard_location channel (Admin)");
 
     // 🧹 Cleanup
     return () => {
@@ -119,7 +117,7 @@ export default function MapRealtime() {
           mapRef.current = null;
         }
         channelRef.current = null;
-        console.log("🧹 Cleaned up MapRealtime");
+        console.log("🧹 Cleaned up Admin MapRealtime");
       } catch (err) {
         console.warn("⚠️ Cleanup error:", err.message);
       }
@@ -134,7 +132,9 @@ export default function MapRealtime() {
       transition={{ duration: 0.6 }}
     >
       <div className="flex items-baseline justify-between px-4 pt-4">
-        <h3 className="text-lg font-semibold text-[#0B132B]">🗺️ Live Multi-Guard Tracking</h3>
+        <h3 className="text-lg font-semibold text-[#0B132B]">
+          🗺️ Live Multi-Guard Tracking
+        </h3>
         <p className="text-xs text-gray-500">Realtime updates via Supabase</p>
       </div>
 
@@ -149,11 +149,11 @@ export default function MapRealtime() {
           className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md border border-gray-200 rounded-xl shadow-md px-3 py-2 flex items-center gap-3 text-xs text-gray-700"
         >
           <div className="flex items-center gap-1">
-            <span className="w-3 h-2 rounded-sm bg-green-500"></span>
+            <span className="w-3 h-2 rounded-sm bg-blue-500"></span>
             <span>Active Guards</span>
           </div>
           <div className="flex items-center gap-1">
-            <img src="/images/guard-icon.png" alt="Guard" className="w-4 h-4" />
+            <img src="/images/guard-icon.jpg" alt="Guard" className="w-4 h-4" />
             <span>Guard Position</span>
           </div>
         </motion.div>
