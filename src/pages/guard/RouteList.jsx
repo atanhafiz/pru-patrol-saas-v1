@@ -1,5 +1,5 @@
-// ✅ AHE SmartPatrol v2.7 — Auto Telegram Summary
-// When guard finishes all houses in a session, system auto-sends summary text to Telegram Admin.
+// ✅ AHE SmartPatrol v2.8 — Clean Register + No Default Junk
+// Removes "Guard Amir" & "Unknown" defaults, forces re-register each session.
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -15,7 +15,15 @@ import "leaflet/dist/leaflet.css";
 
 let gpsWatchId = null;
 
-// --- Map Helpers -------------------------------------------------------------
+// --- Helper: validate input ---------------------------------------------------
+const isValidGuardValue = (v) => {
+  if (!v) return false;
+  const s = String(v).trim().toLowerCase();
+  const bad = ["", "unknown", "guard amir", "guardamir", "guard"];
+  return !bad.includes(s);
+};
+
+// --- Map Helpers --------------------------------------------------------------
 function MapCenter({ center, zoom }) {
   const map = useMap();
   const done = useRef(false);
@@ -50,17 +58,25 @@ function PolylineTracker({ center, polylineRef, coordsRef }) {
   return null;
 }
 
-// --- Main --------------------------------------------------------------------
+// --- Main ---------------------------------------------------------------------
 export default function RouteList() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ✅ sanitize stored data
+  const storedName = localStorage.getItem("guardName");
+  const storedPlate = localStorage.getItem("plateNo");
+  const nameOK = isValidGuardValue(storedName);
+  const plateOK = isValidGuardValue(storedPlate);
+
   const [assignments, setAssignments] = useState([]);
   const [doneIds, setDoneIds] = useState([]);
   const [guardPos, setGuardPos] = useState(null);
-  const [guardName, setGuardName] = useState(localStorage.getItem("guardName") || "");
-  const [plateNo, setPlateNo] = useState(localStorage.getItem("plateNo") || "");
-  const [registered, setRegistered] = useState(localStorage.getItem("registered") === "true");
+  const [guardName, setGuardName] = useState(nameOK ? storedName : "");
+  const [plateNo, setPlateNo] = useState(plateOK ? storedPlate : "");
+  const [registered, setRegistered] = useState(
+    nameOK && plateOK && localStorage.getItem("registered") === "true"
+  );
   const [loading, setLoading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [selfieType, setSelfieType] = useState(null);
@@ -73,14 +89,21 @@ export default function RouteList() {
   const coordsRef = useRef([]);
   const blockNavRef = useRef(true);
 
-  // --- Hard-lock stayOnRoute --------------------------------------------------
+  // --- Clean invalid saved data on mount --------------------------------------
   useEffect(() => {
-    sessionStorage.setItem("stayOnRoute", "true");
-    blockNavRef.current = true;
-    return () => {
-      sessionStorage.removeItem("stayOnRoute");
-      blockNavRef.current = false;
-    };
+    if (!isValidGuardValue(localStorage.getItem("guardName"))) {
+      localStorage.removeItem("guardName");
+    }
+    if (!isValidGuardValue(localStorage.getItem("plateNo"))) {
+      localStorage.removeItem("plateNo");
+    }
+    if (
+      !isValidGuardValue(localStorage.getItem("guardName")) ||
+      !isValidGuardValue(localStorage.getItem("plateNo"))
+    ) {
+      localStorage.removeItem("registered");
+      setRegistered(false);
+    }
   }, []);
 
   // --- Fetch assignments ------------------------------------------------------
@@ -90,7 +113,6 @@ export default function RouteList() {
         .from("patrol_assignments")
         .select("*")
         .eq("status", "pending")
-        .eq("community_name", "Prima Residensi Utama")
         .order("created_at");
       setAssignments(data || []);
     })();
@@ -164,21 +186,17 @@ export default function RouteList() {
   // --- Auto Telegram Summary --------------------------------------------------
   useEffect(() => {
     if (!assignments.length) return;
-
     const grouped = assignments.reduce((a, r) => {
       (a[r.session_no || 0] ||= []).push(r);
       return a;
     }, {});
-
     Object.keys(grouped).forEach(async (sessionNo) => {
       const houses = grouped[sessionNo];
       const total = houses.length;
       const doneCount = houses.filter((h) => doneIds.includes(h.id)).length;
-
       if (total > 0 && total === doneCount) {
         if (!sessionStorage.getItem(`summarySent_${sessionNo}`)) {
           sessionStorage.setItem(`summarySent_${sessionNo}`, "true");
-
           const msg = `🧾 *Patrol Summary*
 👮 ${guardName}
 🏍️ ${plateNo}
@@ -186,7 +204,6 @@ export default function RouteList() {
 ✅ Houses Done: ${total}/${total}
 📍 Prima Residensi Utama
 🕓 ${new Date().toLocaleString()}`;
-
           await sendTelegramMessage(msg);
           toast.success(`📨 Session ${sessionNo} report sent`);
         }
@@ -194,7 +211,7 @@ export default function RouteList() {
     });
   }, [doneIds]);
 
-  // --- Selfie Camera Logic ----------------------------------------------------
+  // --- Camera & Selfie --------------------------------------------------------
   const openCamera = async (t) => {
     setSelfieType(t);
     setShowCamera(true);
@@ -222,28 +239,23 @@ export default function RouteList() {
     const path = `selfies/${guardName}_${selfieType}_${ts}.jpg`;
     const url = await uploadToSupabase(path, blob);
     const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
-
     const caption =
       selfieType === "selfieIn"
         ? `🚨 Guard On Duty\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
         : `✅ Patrol Ended\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
-
     await sendTelegramPhoto(url, caption);
     setShowCamera(false);
 
     if (selfieType === "selfieOut") {
       closeGuardChannel();
       toast.success("✅ Patrol Ended");
-
-      // 🧹 Reset guard info for next session
-      localStorage.removeItem("guardName");
-      localStorage.removeItem("plateNo");
-      localStorage.removeItem("registered");
-
+      // Reset all saved info
+      ["guardName", "plateNo", "registered"].forEach((k) =>
+        localStorage.removeItem(k)
+      );
       sessionStorage.removeItem("stayOnRoute");
       blockNavRef.current = false;
       setAllowSelfieOutNav(true);
-
       setTimeout(() => {
         navigate("/guard/dashboard");
       }, 600);
@@ -256,7 +268,7 @@ export default function RouteList() {
     return a;
   }, {});
 
-  // --- UI --------------------------------------------------------------------
+  // --- UI ---------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-[#f7faff] p-4 space-y-4 pb-16">
       <h1 className="text-2xl font-bold text-[#0B132B]">Guard Routes</h1>
@@ -277,11 +289,14 @@ export default function RouteList() {
           />
           <button
             onClick={() => {
-              if (!guardName || !plateNo)
-                return toast.error("Please enter name & plate number");
+              const name = guardName.trim();
+              const plate = plateNo.trim();
+              if (!isValidGuardValue(name) || !isValidGuardValue(plate)) {
+                return toast.error("Please enter valid name & plate number");
+              }
               setRegistered(true);
-              localStorage.setItem("guardName", guardName);
-              localStorage.setItem("plateNo", plateNo);
+              localStorage.setItem("guardName", name);
+              localStorage.setItem("plateNo", plate);
               localStorage.setItem("registered", "true");
               toast.success("✅ Registered");
             }}
