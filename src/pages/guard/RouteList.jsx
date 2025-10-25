@@ -1,5 +1,5 @@
-// ✅ AHE SmartPatrol v2.8 — Clean Register + No Default Junk
-// Removes "Guard Amir" & "Unknown" defaults, forces re-register each session.
+// ✅ AHE SmartPatrol v2.9 — Assigned Houses Restored
+// Restores Assigned Houses list under map, keeps clean registration logic.
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -63,7 +63,6 @@ export default function RouteList() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ sanitize stored data
   const storedName = localStorage.getItem("guardName");
   const storedPlate = localStorage.getItem("plateNo");
   const nameOK = isValidGuardValue(storedName);
@@ -109,12 +108,18 @@ export default function RouteList() {
   // --- Fetch assignments ------------------------------------------------------
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("patrol_assignments")
         .select("*")
         .eq("status", "pending")
         .order("created_at");
-      setAssignments(data || []);
+
+      if (error) {
+        console.error("❌ Fetch assignments error:", error.message);
+        toast.error("Failed to load assignments");
+      } else {
+        setAssignments(data || []);
+      }
     })();
   }, []);
 
@@ -249,7 +254,6 @@ export default function RouteList() {
     if (selfieType === "selfieOut") {
       closeGuardChannel();
       toast.success("✅ Patrol Ended");
-      // Reset all saved info
       ["guardName", "plateNo", "registered"].forEach((k) =>
         localStorage.removeItem(k)
       );
@@ -322,6 +326,7 @@ export default function RouteList() {
             </button>
           </div>
 
+          {/* Map Section */}
           <div className="h-[360px] rounded-xl overflow-hidden shadow bg-white mt-3">
             <MapContainer
               center={guardPos || [5.65, 100.5]}
@@ -372,9 +377,52 @@ export default function RouteList() {
               ))}
             </MapContainer>
           </div>
+
+          {/* 🏘️ Assigned Houses List Restored */}
+          <div className="bg-white p-4 rounded-xl shadow mt-3">
+            <h3 className="font-semibold mb-2">🏠 Assigned Houses</h3>
+            {Object.keys(grouped).length === 0 ? (
+              <p className="text-gray-500 text-sm">No assigned houses.</p>
+            ) : (
+              Object.keys(grouped).map((s) => (
+                <div key={s} className="mb-3">
+                  <h4 className="font-semibold mb-1">Session {s}</h4>
+                  {grouped[s].map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex justify-between border-b py-1 text-sm"
+                    >
+                      <span>
+                        {a.house_no} {a.street_name} ({a.block})
+                      </span>
+                      {doneIds.includes(a.id) ? (
+                        <span className="text-green-600">✅ Done</span>
+                      ) : (
+                        <label className="cursor-pointer text-blue-600">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            hidden
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) handleSnap(file, a);
+                              e.target.value = "";
+                            }}
+                          />
+                          📸 Snap
+                        </label>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
         </>
       )}
 
+      {/* Camera Modal & Loader same as before */}
       {showCamera && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
