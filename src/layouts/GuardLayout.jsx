@@ -8,7 +8,7 @@ export default function GuardLayout() {
 
   const navItems = [
     { path: "/guard/dashboard", icon: <Home size={20} />, label: "Home" },
-    { path: "/guard/route", icon: <ListChecks size={20} />, label: "Routes" },
+    { path: "/guard/routes", icon: <ListChecks size={20} />, label: "Routes" },
     { path: "/guard/selfie", icon: <Camera size={20} />, label: "Attendance" },
     { path: "/guard/report", icon: <FileText size={20} />, label: "Report" },
   ];

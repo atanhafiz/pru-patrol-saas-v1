@@ -1,8 +1,8 @@
-// ✅ AHE SmartPatrol v2.4 — KONKRIT FIELD FIX
-// Stay on route until Selfie OUT, no auto redirect at all.
+// ✅ AHE SmartPatrol v2.5 — PERMANENT STAY-ON-ROUTE FIX
+// Guard stays on /guard/routes permanently until selfieOut triggers navigate()
 
-import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { getGuardChannel, closeGuardChannel } from "../../lib/guardChannel";
 import { sendTelegramPhoto } from "../../shared/api/telegram";
@@ -49,6 +49,7 @@ function PolylineTracker({ center, polylineRef, coordsRef }) {
 // --- Main --------------------------------------------------------------------
 export default function RouteList() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [assignments, setAssignments] = useState([]);
   const [doneIds, setDoneIds] = useState([]);
@@ -59,19 +60,56 @@ export default function RouteList() {
   const [loading, setLoading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [selfieType, setSelfieType] = useState(null);
+  const [allowSelfieOutNav, setAllowSelfieOutNav] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const uploadingRef = useRef(new Set());
   const polylineRef = useRef(null);
   const coordsRef = useRef([]);
+  const blockNavRef = useRef(true);
 
-  // --- Hard-lock to stay on this page ----------------------------------------
+  // --- CRITICAL: Hard-lock to stay on this page ------------------------------
   useEffect(() => {
-    localStorage.setItem("registered", "true");
+    console.log("🔒 RouteList mounted — setting stayOnRoute flag");
     sessionStorage.setItem("stayOnRoute", "true");
-    return () => sessionStorage.removeItem("stayOnRoute");
+    blockNavRef.current = true;
+    
+    return () => {
+      console.log("🔓 RouteList unmounting — removing stayOnRoute flag");
+      sessionStorage.removeItem("stayOnRoute");
+      blockNavRef.current = false;
+    };
   }, []);
+
+  // --- Block unwanted navigation attempts -------------------------------------
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (allowSelfieOutNav) return;
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [allowSelfieOutNav]);
+
+  // --- Intercept location changes to prevent navigation ----------------------
+  useEffect(() => {
+    const stopNav = (e) => {
+      const stayOnRoute = sessionStorage.getItem("stayOnRoute");
+      if (stayOnRoute === "true" && blockNavRef.current && !allowSelfieOutNav) {
+        console.log("🚫 Blocked navigation attempt to:", location.pathname);
+        e.preventDefault();
+        window.history.pushState(null, "", "/guard/routes");
+        return false;
+      }
+    };
+
+    window.addEventListener("popstate", stopNav);
+    return () => window.removeEventListener("popstate", stopNav);
+  }, [location, allowSelfieOutNav]);
 
   // --- Fetch assignments -----------------------------------------------------
   useEffect(() => {
@@ -115,29 +153,41 @@ export default function RouteList() {
     return supabase.storage.from("patrol-photos").getPublicUrl(path).data.publicUrl;
   };
 
-  // --- Handle Snap (stay in page) --------------------------------------------
-  const handleSnap = async (file, a) => {
-    if (!file || uploadingRef.current.has(a.id)) return;
-    uploadingRef.current.add(a.id);
+  // --- Handle Snap (CRITICAL: no navigation, no unmount) ---------------------
+  const handleSnap = useCallback(async (file, assignment) => {
+    if (!file || uploadingRef.current.has(assignment.id)) return;
+    
+    console.log("📸 handleSnap called for:", assignment.id);
+    uploadingRef.current.add(assignment.id);
     setLoading(true);
+    
     try {
       const ts = Date.now();
       const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
-      const path = `houses/${a.house_no}_${ts}.jpg`;
+      const path = `houses/${assignment.house_no}_${ts}.jpg`;
       const url = await uploadToSupabase(path, file);
+      
       await sendTelegramPhoto(
         url,
-        `🏠 *${a.house_no} ${a.street_name} (${a.block})*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`
+        `🏠 *${assignment.house_no} ${assignment.street_name} (${assignment.block})*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`
       );
-      setDoneIds((d) => [...new Set([...d, a.id])]);
-      toast.success(`✅ ${a.house_no} sent`);
+      
+      // ✅ INSTANT UI UPDATE - mark as done immediately
+      setDoneIds((prev) => {
+        const updated = [...new Set([...prev, assignment.id])];
+        console.log("✅ Updated doneIds:", updated);
+        return updated;
+      });
+      
+      toast.success(`✅ ${assignment.house_no} uploaded successfully`);
     } catch (e) {
-      toast.error("Upload failed");
+      console.error("Upload error:", e);
+      toast.error("Upload failed: " + e.message);
     } finally {
       setLoading(false);
-      uploadingRef.current.delete(a.id);
+      uploadingRef.current.delete(assignment.id);
     }
-  };
+  }, [guardPos, guardName, plateNo]);
 
   // --- Camera ----------------------------------------------------------------
   const openCamera = async (t) => {
@@ -169,11 +219,16 @@ export default function RouteList() {
         : `✅ Patrol Ended\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
     await sendTelegramPhoto(url, cap);
     setShowCamera(false);
+    
     if (selfieType === "selfieOut") {
       closeGuardChannel();
       toast.success("✅ Patrol Ended");
       sessionStorage.removeItem("stayOnRoute");
-      setTimeout(() => navigate("/guard/dashboard"), 600);
+      blockNavRef.current = false;
+      setAllowSelfieOutNav(true);
+      setTimeout(() => {
+        navigate("/guard/dashboard");
+      }, 600);
     }
   };
 
@@ -194,7 +249,12 @@ export default function RouteList() {
       </div>
 
       <div className="h-[360px] rounded-xl overflow-hidden shadow bg-white mt-3">
-        <MapContainer center={guardPos || [5.65, 100.5]} zoom={16} style={{ height: "100%", width: "100%" }}>
+        <MapContainer 
+          center={guardPos || [5.65, 100.5]} 
+          zoom={16} 
+          style={{ height: "100%", width: "100%" }}
+          key="route-map"
+        >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <MapCenter center={guardPos} />
           <PolylineTracker center={guardPos} polylineRef={polylineRef} coordsRef={coordsRef} />
@@ -207,7 +267,17 @@ export default function RouteList() {
                   <button disabled className="bg-green-500 text-white px-2 py-1 text-xs rounded mt-2">✅ Done</button>
                 ) : (
                   <label className="bg-blue-500 text-white px-2 py-1 text-xs rounded mt-2 cursor-pointer">
-                    <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => handleSnap(e.target.files[0], a)} />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      capture="environment" 
+                      hidden 
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) handleSnap(file, a);
+                        e.target.value = "";
+                      }} 
+                    />
                     📸 Snap
                   </label>
                 )}
@@ -225,12 +295,24 @@ export default function RouteList() {
             {grouped[s].map((a) => (
               <div key={a.id} className="flex justify-between border-b py-1 text-sm">
                 <span>{a.house_no} {a.street_name} ({a.block})</span>
-                {doneIds.includes(a.id)
-                  ? <span className="text-green-600">✅ Done</span>
-                  : <label className="cursor-pointer text-blue-600">
-                      <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => handleSnap(e.target.files[0], a)} />
-                      📸 Snap
-                    </label>}
+                {doneIds.includes(a.id) ? (
+                  <span className="text-green-600">✅ Done</span>
+                ) : (
+                  <label className="cursor-pointer text-blue-600">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      capture="environment" 
+                      hidden 
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) handleSnap(file, a);
+                        e.target.value = "";
+                      }} 
+                    />
+                    📸 Snap
+                  </label>
+                )}
               </div>
             ))}
           </div>

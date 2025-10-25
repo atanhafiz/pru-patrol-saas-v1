@@ -46,7 +46,7 @@ export default function AppRouter() {
         <Route path="/guard" element={<GuardLayout />}>
           <Route index element={<GuardDashboard />} />
           <Route path="dashboard" element={<GuardDashboard />} />
-          <Route path="route" element={<RouteList />} />
+          <Route path="routes" element={<RouteList />} />
           <Route path="selfie" element={<SelfieCheckIn />} />
           <Route path="report" element={<IncidentForm />} />
           <Route path="*" element={<Navigate to="/guard/dashboard" />} />
