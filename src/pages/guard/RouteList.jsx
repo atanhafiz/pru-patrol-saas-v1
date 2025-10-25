@@ -1,6 +1,5 @@
-// ✅ AHE SmartPatrol v2.1 (Stable GPS + Smooth Polyline)
-// RouteList.jsx — guard routes + selfie + Telegram + smoother map tracking
-// Dynamic guard login, live map, Telegram upload (stable)
+// ✅ AHE SmartPatrol v2.2 — Final Stable RouteList
+// Guard live route + selfie + Telegram + smooth polyline (no redirect bug)
 
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9,18 +8,17 @@ import { getGuardChannel, closeGuardChannel } from "../../lib/guardChannel";
 import { sendTelegramPhoto } from "../../shared/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
-import { Camera, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import GuardBottomNav from "../../components/GuardBottomNav";
 import toast from "react-hot-toast";
 import "leaflet/dist/leaflet.css";
 
 let gpsWatchId = null;
 
-// ✅ Map flyTo sekali sahaja masa mula
+// ✅ Center map smoothly once
 function MapCenter({ center, zoom }) {
   const map = useMap();
   const hasCenteredRef = useRef(false);
-
   useEffect(() => {
     if (center && map && !hasCenteredRef.current) {
       map.flyTo(center, zoom || 17, { animate: true, duration: 1.3 });
@@ -30,7 +28,7 @@ function MapCenter({ center, zoom }) {
   return null;
 }
 
-// ✅ Stable polyline tracker — filter jitter + debounce
+// ✅ Smooth polyline with GPS drift filter
 function PolylineTracker({ center, polylineRef, coordsRef }) {
   const map = useMap();
   const lastUpdateRef = useRef(0);
@@ -38,13 +36,11 @@ function PolylineTracker({ center, polylineRef, coordsRef }) {
   useEffect(() => {
     if (!center || !map) return;
     const now = Date.now();
-    // 🕐 Debounce 1.5s
     if (now - lastUpdateRef.current < 1500) return;
     lastUpdateRef.current = now;
 
     const last = coordsRef.current.at(-1);
     if (last) {
-      // 🧭 Skip if movement < 3 m (≈0.00003°)
       const dx = Math.abs(center[0] - last[0]);
       const dy = Math.abs(center[1] - last[1]);
       if (dx < 0.00003 && dy < 0.00003) return;
@@ -83,7 +79,7 @@ export default function RouteList() {
   const polylineRef = useRef(null);
   const coordsRef = useRef([]);
 
-  // ✅ Fetch patrol assignments
+  // ✅ Fetch assignments
   const fetchAssignments = async () => {
     try {
       const { data, error } = await supabase
@@ -94,34 +90,25 @@ export default function RouteList() {
         .order("created_at", { ascending: true });
       if (error) throw error;
       setAssignments(data || []);
-      console.log("✅ Patrol assignments fetched:", data?.length);
     } catch (err) {
       console.error("❌ Fetch assignments error:", err.message);
       toast.error("Failed to load patrol assignments.");
     }
   };
+  useEffect(() => { fetchAssignments(); }, []);
 
+  // ✅ GPS Tracking
   useEffect(() => {
-    fetchAssignments();
-  }, []);
-
-  // ✅ GPS tracking + broadcast (stabil)
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      toast.error("GPS not supported");
-      return;
-    }
-
+    if (!navigator.geolocation) return;
     gpsWatchId = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
-        if (accuracy > 15) return; // 🚫 Skip low accuracy (>15m)
-
+        if (accuracy > 15) return;
         setGuardPos((prev) => {
           if (!prev) return [latitude, longitude];
           const dx = Math.abs(latitude - prev[0]);
           const dy = Math.abs(longitude - prev[1]);
-          if (dx < 0.00003 && dy < 0.00003) return prev; // 🚫 Skip small move
+          if (dx < 0.00003 && dy < 0.00003) return prev;
           return [latitude, longitude];
         });
 
@@ -162,23 +149,22 @@ export default function RouteList() {
     return data.publicUrl;
   };
 
-  // ✅ Snap photo & send Telegram
+  // ✅ Handle snap (stay in route)
   const handleSnap = async (file, a) => {
     if (!file || !a) return;
     if (uploadingRef.current.has(a.id)) return;
     uploadingRef.current.add(a.id);
     setLoading(true);
+
     try {
       const ts = Date.now();
       const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
       const filePath = `houses/${a.house_no}_${ts}.jpg`;
       const photoUrl = await uploadToSupabase(filePath, file);
-
       const caption = `🏠 *${a.house_no} ${a.street_name} (${a.block})*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
       await sendTelegramPhoto(photoUrl, caption);
-
-      toast.success("✅ Photo sent to Telegram!");
-      setDoneIds((p) => [...p, a.id]);
+      toast.success(`✅ ${a.house_no} photo sent`);
+      setDoneIds((prev) => [...prev, a.id]);
     } catch (err) {
       console.error("Snap error:", err.message);
       toast.error("❌ Upload failed");
@@ -188,43 +174,44 @@ export default function RouteList() {
     }
   };
 
-// ✅ Camera control (selfie)
-const openCamera = async (type) => {
-  setSelfieType(type);
-  setShowCamera(true);
-  try {
-    // 🧠 Selfie IN & OUT kedua-dua guna kamera depan
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user" },
-    });
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
+  // ✅ Camera (front for IN & OUT, mirror preview)
+  const openCamera = async (type) => {
+    setSelfieType(type);
+    setShowCamera(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.style.transform = "scaleX(-1)"; // mirror view
+        await videoRef.current.play();
+      }
+    } catch {
+      toast.error("Camera not accessible. Allow permission.");
+      setShowCamera(false);
     }
-  } catch (err) {
-    console.error("Camera error:", err.message);
-    toast.error("Camera not accessible. Please allow camera permission.");
-    setShowCamera(false);
-  }
-};
+  };
 
   const captureSelfie = async () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+    ctx.translate(canvas.width, 0); // mirror snapshot
+    ctx.scale(-1, 1);
     ctx.drawImage(videoRef.current, 0, 0, 400, 300);
     const blob = await (await fetch(canvas.toDataURL("image/jpeg"))).blob();
     const ts = Date.now();
     const filePath = `selfies/${guardName}_${selfieType}_${ts}.jpg`;
     const photoUrl = await uploadToSupabase(filePath, blob);
-
     const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
     const caption =
       selfieType === "selfieIn"
         ? `🚨 Guard On Duty\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`
         : `✅ Patrol Ended\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`;
-    await sendTelegramPhoto(photoUrl, caption);
 
+    await sendTelegramPhoto(photoUrl, caption);
     setShowCamera(false);
+
     if (selfieType === "selfieOut") {
       closeGuardChannel();
       toast.success("✅ Patrol Ended");
@@ -244,8 +231,7 @@ const openCamera = async (type) => {
     <div className="min-h-screen bg-[#f7faff] p-4 space-y-4 pb-16">
       <h1 className="text-2xl font-bold text-[#0B132B]">Guard Routes</h1>
 
-      {/* Registration */}
-      {!registered && (
+      {!registered ? (
         <div className="bg-white p-4 rounded-xl shadow">
           <input
             placeholder="Guard Name"
@@ -273,10 +259,7 @@ const openCamera = async (type) => {
             Save
           </button>
         </div>
-      )}
-
-      {/* Active Patrol View */}
-      {registered && (
+      ) : (
         <>
           <div className="flex gap-2">
             <button
@@ -301,37 +284,17 @@ const openCamera = async (type) => {
             >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <MapCenter center={guardPos} />
-              <PolylineTracker
-                center={guardPos}
-                polylineRef={polylineRef}
-                coordsRef={coordsRef}
-              />
-              {guardPos && (
-                <Marker position={guardPos}>
-                  <Popup>{guardName || "Guard Active"}</Popup>
-                </Marker>
-              )}
+              <PolylineTracker center={guardPos} polylineRef={polylineRef} coordsRef={coordsRef} />
+              {guardPos && <Marker position={guardPos}><Popup>{guardName}</Popup></Marker>}
               {assignments.map((a) => (
                 <Marker key={a.id} position={[a.lat || 0, a.lng || 0]}>
                   <Popup>
-                    {a.house_no} {a.street_name} ({a.block})
-                    <br />
+                    {a.house_no} {a.street_name} ({a.block})<br />
                     {doneIds.includes(a.id) ? (
-                      <button
-                        disabled
-                        className="bg-green-500 text-white px-2 py-1 text-xs rounded mt-2"
-                      >
-                        ✅ Done
-                      </button>
+                      <button disabled className="bg-green-500 text-white px-2 py-1 text-xs rounded mt-2">✅ Done</button>
                     ) : (
                       <label className="bg-blue-500 text-white px-2 py-1 text-xs rounded mt-2 cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          hidden
-                          onChange={(e) => handleSnap(e.target.files[0], a)}
-                        />
+                        <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => handleSnap(e.target.files[0], a)} />
                         📸 Snap
                       </label>
                     )}
@@ -341,31 +304,19 @@ const openCamera = async (type) => {
             </MapContainer>
           </div>
 
-          {/* Session List */}
           <div className="bg-white p-4 rounded-xl shadow mt-3">
             <h3 className="font-semibold mb-2">🏠 Assigned Houses</h3>
             {Object.keys(grouped).map((s) => (
               <div key={s} className="mb-3">
                 <h4 className="font-semibold mb-1">Session {s}</h4>
                 {grouped[s].map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex justify-between border-b py-1 text-sm"
-                  >
-                    <span>
-                      {a.house_no} {a.street_name} ({a.block})
-                    </span>
+                  <div key={a.id} className="flex justify-between border-b py-1 text-sm">
+                    <span>{a.house_no} {a.street_name} ({a.block})</span>
                     {doneIds.includes(a.id) ? (
                       <span className="text-green-600">✅ Done</span>
                     ) : (
                       <label className="cursor-pointer text-blue-600">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          hidden
-                          onChange={(e) => handleSnap(e.target.files[0], a)}
-                        />
+                        <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => handleSnap(e.target.files[0], a)} />
                         📸 Snap
                       </label>
                     )}
@@ -377,38 +328,19 @@ const openCamera = async (type) => {
         </>
       )}
 
-      {/* Selfie Modal */}
       {showCamera && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
-            <video
-              ref={videoRef}
-              width="400"
-              height="300"
-              autoPlay
-              playsInline
-              className="rounded-md"
-            />
+            <video ref={videoRef} width="400" height="300" autoPlay playsInline className="rounded-md" />
             <canvas ref={canvasRef} width="400" height="300" hidden />
             <div className="mt-2 flex gap-2">
-              <button
-                onClick={captureSelfie}
-                className="bg-blue-600 text-white py-2 rounded w-full"
-              >
-                Capture
-              </button>
-              <button
-                onClick={() => setShowCamera(false)}
-                className="bg-gray-400 text-black py-2 rounded w-full"
-              >
-                Close
-              </button>
+              <button onClick={captureSelfie} className="bg-blue-600 text-white py-2 rounded w-full">Capture</button>
+              <button onClick={() => setShowCamera(false)} className="bg-gray-400 text-black py-2 rounded w-full">Close</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Uploading overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-5 rounded-xl flex flex-col items-center gap-3">
