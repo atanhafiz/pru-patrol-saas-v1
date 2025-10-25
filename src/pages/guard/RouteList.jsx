@@ -188,22 +188,25 @@ export default function RouteList() {
     }
   };
 
-  // ✅ Camera control (selfie)
-  const openCamera = async (type) => {
-    setSelfieType(type);
-    setShowCamera(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: type === "selfieIn" ? "user" : "environment" },
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-    } catch {
-      toast.error("Camera not accessible.");
+// ✅ Camera control (selfie)
+const openCamera = async (type) => {
+  setSelfieType(type);
+  setShowCamera(true);
+  try {
+    // 🧠 Selfie IN & OUT kedua-dua guna kamera depan
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user" },
+    });
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
     }
-  };
+  } catch (err) {
+    console.error("Camera error:", err.message);
+    toast.error("Camera not accessible. Please allow camera permission.");
+    setShowCamera(false);
+  }
+};
 
   const captureSelfie = async () => {
     const canvas = canvasRef.current;
