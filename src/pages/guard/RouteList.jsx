@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { getGuardChannel, closeGuardChannel } from "../../lib/guardChannel";
-import { sendTelegramPhoto, sendTelegramMessage } from "../../shared/api/telegram";
+import { sendTelegramPhoto, sendTelegramMessage } from "../../lib/telegram";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Loader2 } from "lucide-react";
