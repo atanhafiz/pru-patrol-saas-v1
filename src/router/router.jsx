@@ -1,13 +1,13 @@
-// router.jsx — AHE SmartPatrol GuardApp CLEAN VERSION (Patched Anti-Redirect)
+// router.jsx — AHE SmartPatrol GuardApp FINAL (no redirect logic)
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-// ✅ Import Guard Pages (current)
+// Guard pages
 import RouteList from "./pages/guard/RouteList";
 import ReportPage from "./pages/guard/ReportPage";
 import SelfiePage from "./pages/guard/SelfiePage";
 
-// ✅ (Optional) Admin pages — kalau nak guna semula nanti
+// Admin + Auth
 import Dashboard from "./pages/admin/Dashboard";
 import Login from "./pages/guard/Login";
 import Register from "./pages/guard/Register";
@@ -16,41 +16,22 @@ export default function AppRouter() {
   return (
     <Router>
       <Routes>
-
-        {/* Default guard page → terus ke Routes */}
+        {/* Default → terus ke guard routes */}
         <Route path="/" element={<Navigate to="/guard/routes" replace />} />
 
-        {/* ✅ Guard Pages — kekalkan dalam RouteList walaupun reload */}
-        <Route
-          path="/guard/routes"
-          element={<PersistentGuardRoute component={<RouteList />} />}
-        />
+        {/* 🔒 FORCE kekal di route — tak depend registered */}
+        <Route path="/guard/routes" element={<RouteList />} />
         <Route path="/guard/report" element={<ReportPage />} />
         <Route path="/guard/selfie" element={<SelfiePage />} />
 
-        {/* Admin Pages */}
+        {/* Admin */}
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/guard/login" element={<Login />} />
         <Route path="/guard/register" element={<Register />} />
 
-        {/* Fallback (anything else → routes) */}
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/guard/routes" replace />} />
       </Routes>
     </Router>
   );
-}
-
-/* ✅ Mini wrapper: kekalkan guard di RouteList walau registered hilang sementara */
-function PersistentGuardRoute({ component }) {
-  const registered =
-    localStorage.getItem("registered") === "true" ||
-    sessionStorage.getItem("registered") === "true";
-
-  // Kalau guard belum register langsung, baru redirect ke login
-  if (!registered) {
-    return <Navigate to="/guard/login" replace />;
-  }
-
-  // Selain tu, kekalkan page (no redirect ke dashboard)
-  return component;
 }
