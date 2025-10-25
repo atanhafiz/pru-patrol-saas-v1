@@ -1,5 +1,5 @@
-// ✅ AHE SmartPatrol v2.5 — PERMANENT STAY-ON-ROUTE FIX
-// Guard stays on /guard/routes permanently until selfieOut triggers navigate()
+// ✅ AHE SmartPatrol v2.6 — Reset Register After SelfieOut
+// Force register new guard after each session (Selfie OUT)
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -15,7 +15,7 @@ import "leaflet/dist/leaflet.css";
 
 let gpsWatchId = null;
 
-// --- Map helpers -------------------------------------------------------------
+// --- Map Helpers -------------------------------------------------------------
 function MapCenter({ center, zoom }) {
   const map = useMap();
   const done = useRef(false);
@@ -40,13 +40,17 @@ function PolylineTracker({ center, polylineRef, coordsRef }) {
     if (prev && Math.abs(center[0] - prev[0]) < 0.00003 && Math.abs(center[1] - prev[1]) < 0.00003) return;
     coordsRef.current.push(center);
     if (!polylineRef.current) {
-      polylineRef.current = L.polyline(coordsRef.current, { color: "#00b300", weight: 4, opacity: 0.8 }).addTo(map);
+      polylineRef.current = L.polyline(coordsRef.current, {
+        color: "#00b300",
+        weight: 4,
+        opacity: 0.8,
+      }).addTo(map);
     } else polylineRef.current.addLatLng(center);
   }, [center, map]);
   return null;
 }
 
-// --- Main --------------------------------------------------------------------
+// --- Main Component -----------------------------------------------------------
 export default function RouteList() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,7 +60,7 @@ export default function RouteList() {
   const [guardPos, setGuardPos] = useState(null);
   const [guardName, setGuardName] = useState(localStorage.getItem("guardName") || "");
   const [plateNo, setPlateNo] = useState(localStorage.getItem("plateNo") || "");
-  const [registered, setRegistered] = useState(true);
+  const [registered, setRegistered] = useState(localStorage.getItem("registered") === "true");
   const [loading, setLoading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [selfieType, setSelfieType] = useState(null);
@@ -69,20 +73,17 @@ export default function RouteList() {
   const coordsRef = useRef([]);
   const blockNavRef = useRef(true);
 
-  // --- CRITICAL: Hard-lock to stay on this page ------------------------------
+  // --- Hard-lock stayOnRoute --------------------------------------------------
   useEffect(() => {
-    console.log("🔒 RouteList mounted — setting stayOnRoute flag");
     sessionStorage.setItem("stayOnRoute", "true");
     blockNavRef.current = true;
-    
     return () => {
-      console.log("🔓 RouteList unmounting — removing stayOnRoute flag");
       sessionStorage.removeItem("stayOnRoute");
       blockNavRef.current = false;
     };
   }, []);
 
-  // --- Block unwanted navigation attempts -------------------------------------
+  // --- Prevent browser reload navigation --------------------------------------
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (allowSelfieOutNav) return;
@@ -90,28 +91,25 @@ export default function RouteList() {
       e.returnValue = "";
       return "";
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [allowSelfieOutNav]);
 
-  // --- Intercept location changes to prevent navigation ----------------------
+  // --- Stop unwanted route navigation -----------------------------------------
   useEffect(() => {
     const stopNav = (e) => {
       const stayOnRoute = sessionStorage.getItem("stayOnRoute");
       if (stayOnRoute === "true" && blockNavRef.current && !allowSelfieOutNav) {
-        console.log("🚫 Blocked navigation attempt to:", location.pathname);
         e.preventDefault();
         window.history.pushState(null, "", "/guard/routes");
         return false;
       }
     };
-
     window.addEventListener("popstate", stopNav);
     return () => window.removeEventListener("popstate", stopNav);
   }, [location, allowSelfieOutNav]);
 
-  // --- Fetch assignments -----------------------------------------------------
+  // --- Fetch assignments ------------------------------------------------------
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -124,19 +122,24 @@ export default function RouteList() {
     })();
   }, []);
 
-  // --- GPS Tracking ----------------------------------------------------------
+  // --- GPS Tracking -----------------------------------------------------------
   useEffect(() => {
     if (!navigator.geolocation) return;
     gpsWatchId = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
         if (accuracy > 15) return;
-        setGuardPos((p) => (!p ? [latitude, longitude] : [latitude, longitude]));
+        setGuardPos([latitude, longitude]);
         try {
           getGuardChannel().send({
             type: "broadcast",
             event: "location_update",
-            payload: { lat: latitude, lng: longitude, name: guardName || "Guard", status: "Patrolling" },
+            payload: {
+              lat: latitude,
+              lng: longitude,
+              name: guardName || "Guard",
+              status: "Patrolling",
+            },
           });
         } catch {}
       },
@@ -146,55 +149,52 @@ export default function RouteList() {
     return () => gpsWatchId && navigator.geolocation.clearWatch(gpsWatchId);
   }, [guardName]);
 
-  // --- Upload helper ---------------------------------------------------------
+  // --- Upload helper ----------------------------------------------------------
   const uploadToSupabase = async (path, blob) => {
-    const { error } = await supabase.storage.from("patrol-photos").upload(path, blob, { upsert: true });
+    const { error } = await supabase.storage
+      .from("patrol-photos")
+      .upload(path, blob, { upsert: true });
     if (error) throw error;
     return supabase.storage.from("patrol-photos").getPublicUrl(path).data.publicUrl;
   };
 
-  // --- Handle Snap (CRITICAL: no navigation, no unmount) ---------------------
-  const handleSnap = useCallback(async (file, assignment) => {
-    if (!file || uploadingRef.current.has(assignment.id)) return;
-    
-    console.log("📸 handleSnap called for:", assignment.id);
-    uploadingRef.current.add(assignment.id);
-    setLoading(true);
-    
-    try {
-      const ts = Date.now();
-      const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
-      const path = `houses/${assignment.house_no}_${ts}.jpg`;
-      const url = await uploadToSupabase(path, file);
-      
-      await sendTelegramPhoto(
-        url,
-        `🏠 *${assignment.house_no} ${assignment.street_name} (${assignment.block})*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`
-      );
-      
-      // ✅ INSTANT UI UPDATE - mark as done immediately
-      setDoneIds((prev) => {
-        const updated = [...new Set([...prev, assignment.id])];
-        console.log("✅ Updated doneIds:", updated);
-        return updated;
-      });
-      
-      toast.success(`✅ ${assignment.house_no} uploaded successfully`);
-    } catch (e) {
-      console.error("Upload error:", e);
-      toast.error("Upload failed: " + e.message);
-    } finally {
-      setLoading(false);
-      uploadingRef.current.delete(assignment.id);
-    }
-  }, [guardPos, guardName, plateNo]);
+  // --- Handle Snap ------------------------------------------------------------
+  const handleSnap = useCallback(
+    async (file, assignment) => {
+      if (!file || uploadingRef.current.has(assignment.id)) return;
+      uploadingRef.current.add(assignment.id);
+      setLoading(true);
+      try {
+        const ts = Date.now();
+        const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
+        const path = `houses/${assignment.house_no}_${ts}.jpg`;
+        const url = await uploadToSupabase(path, file);
 
-  // --- Camera ----------------------------------------------------------------
+        await sendTelegramPhoto(
+          url,
+          `🏠 *${assignment.house_no} ${assignment.street_name} (${assignment.block})*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕓 ${new Date().toLocaleString()}`
+        );
+
+        setDoneIds((prev) => [...new Set([...prev, assignment.id])]);
+        toast.success(`✅ ${assignment.house_no} uploaded successfully`);
+      } catch (e) {
+        toast.error("Upload failed: " + e.message);
+      } finally {
+        setLoading(false);
+        uploadingRef.current.delete(assignment.id);
+      }
+    },
+    [guardPos, guardName, plateNo]
+  );
+
+  // --- Camera (Selfie IN / OUT) -----------------------------------------------
   const openCamera = async (t) => {
     setSelfieType(t);
     setShowCamera(true);
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+      });
       videoRef.current.srcObject = s;
       videoRef.current.style.transform = "scaleX(-1)";
       await videoRef.current.play();
@@ -205,34 +205,45 @@ export default function RouteList() {
   };
 
   const captureSelfie = async () => {
-    const c = canvasRef.current, x = c.getContext("2d");
-    x.translate(c.width, 0); x.scale(-1, 1);
+    const c = canvasRef.current;
+    const x = c.getContext("2d");
+    x.translate(c.width, 0);
+    x.scale(-1, 1);
     x.drawImage(videoRef.current, 0, 0, 400, 300);
     const blob = await (await fetch(c.toDataURL("image/jpeg"))).blob();
     const ts = Date.now();
     const path = `selfies/${guardName}_${selfieType}_${ts}.jpg`;
     const url = await uploadToSupabase(path, blob);
     const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
-    const cap =
+
+    const caption =
       selfieType === "selfieIn"
         ? `🚨 Guard On Duty\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
         : `✅ Patrol Ended\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
-    await sendTelegramPhoto(url, cap);
+
+    await sendTelegramPhoto(url, caption);
     setShowCamera(false);
-    
+
     if (selfieType === "selfieOut") {
       closeGuardChannel();
       toast.success("✅ Patrol Ended");
+
+      // 🧹 Reset guard data after session done
+      localStorage.removeItem("guardName");
+      localStorage.removeItem("plateNo");
+      localStorage.removeItem("registered");
+
       sessionStorage.removeItem("stayOnRoute");
       blockNavRef.current = false;
       setAllowSelfieOutNav(true);
+
       setTimeout(() => {
         navigate("/guard/dashboard");
       }, 600);
     }
   };
 
-  // --- Grouping --------------------------------------------------------------
+  // --- Group Assignments ------------------------------------------------------
   const grouped = assignments.reduce((a, r) => {
     (a[r.session_no || 0] ||= []).push(r);
     return a;
@@ -243,95 +254,180 @@ export default function RouteList() {
     <div className="min-h-screen bg-[#f7faff] p-4 space-y-4 pb-16">
       <h1 className="text-2xl font-bold text-[#0B132B]">Guard Routes</h1>
 
-      <div className="flex gap-2">
-        <button onClick={() => openCamera("selfieIn")} className="bg-green-600 text-white px-4 py-2 rounded">Selfie IN</button>
-        <button onClick={() => openCamera("selfieOut")} className="bg-rose-600 text-white px-4 py-2 rounded">Selfie OUT</button>
-      </div>
+      {/* Guard Registration Form */}
+      {!registered && (
+        <div className="bg-white p-4 rounded-xl shadow">
+          <input
+            placeholder="Guard Name"
+            value={guardName}
+            onChange={(e) => setGuardName(e.target.value)}
+            className="border p-2 rounded w-full mb-2"
+          />
+          <input
+            placeholder="Plate Number"
+            value={plateNo}
+            onChange={(e) => setPlateNo(e.target.value)}
+            className="border p-2 rounded w-full mb-3"
+          />
+          <button
+            onClick={() => {
+              if (!guardName || !plateNo)
+                return toast.error("Please enter name & plate number");
+              setRegistered(true);
+              localStorage.setItem("guardName", guardName);
+              localStorage.setItem("plateNo", plateNo);
+              localStorage.setItem("registered", "true");
+              toast.success("✅ Registered");
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded w-full"
+          >
+            Save
+          </button>
+        </div>
+      )}
 
-      <div className="h-[360px] rounded-xl overflow-hidden shadow bg-white mt-3">
-        <MapContainer 
-          center={guardPos || [5.65, 100.5]} 
-          zoom={16} 
-          style={{ height: "100%", width: "100%" }}
-          key="route-map"
-        >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <MapCenter center={guardPos} />
-          <PolylineTracker center={guardPos} polylineRef={polylineRef} coordsRef={coordsRef} />
-          {guardPos && <Marker position={guardPos}><Popup>{guardName}</Popup></Marker>}
-          {assignments.map((a) => (
-            <Marker key={a.id} position={[a.lat || 0, a.lng || 0]}>
-              <Popup>
-                {a.house_no} {a.street_name} ({a.block})<br />
-                {doneIds.includes(a.id) ? (
-                  <button disabled className="bg-green-500 text-white px-2 py-1 text-xs rounded mt-2">✅ Done</button>
-                ) : (
-                  <label className="bg-blue-500 text-white px-2 py-1 text-xs rounded mt-2 cursor-pointer">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      capture="environment" 
-                      hidden 
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) handleSnap(file, a);
-                        e.target.value = "";
-                      }} 
-                    />
-                    📸 Snap
-                  </label>
-                )}
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
+      {/* Main Patrol View */}
+      {registered && (
+        <>
+          <div className="flex gap-2">
+            <button
+              onClick={() => openCamera("selfieIn")}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              Selfie IN
+            </button>
+            <button
+              onClick={() => openCamera("selfieOut")}
+              className="bg-rose-600 text-white px-4 py-2 rounded"
+            >
+              Selfie OUT
+            </button>
+          </div>
 
-      <div className="bg-white p-4 rounded-xl shadow mt-3">
-        <h3 className="font-semibold mb-2">🏠 Assigned Houses</h3>
-        {Object.keys(grouped).map((s) => (
-          <div key={s} className="mb-3">
-            <h4 className="font-semibold mb-1">Session {s}</h4>
-            {grouped[s].map((a) => (
-              <div key={a.id} className="flex justify-between border-b py-1 text-sm">
-                <span>{a.house_no} {a.street_name} ({a.block})</span>
-                {doneIds.includes(a.id) ? (
-                  <span className="text-green-600">✅ Done</span>
-                ) : (
-                  <label className="cursor-pointer text-blue-600">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      capture="environment" 
-                      hidden 
-                      onChange={(e) => {
-                        const file = e.target.files[0];
-                        if (file) handleSnap(file, a);
-                        e.target.value = "";
-                      }} 
-                    />
-                    📸 Snap
-                  </label>
-                )}
+          {/* MAP */}
+          <div className="h-[360px] rounded-xl overflow-hidden shadow bg-white mt-3">
+            <MapContainer
+              center={guardPos || [5.65, 100.5]}
+              zoom={16}
+              style={{ height: "100%", width: "100%" }}
+            >
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              <MapCenter center={guardPos} />
+              <PolylineTracker
+                center={guardPos}
+                polylineRef={polylineRef}
+                coordsRef={coordsRef}
+              />
+              {guardPos && (
+                <Marker position={guardPos}>
+                  <Popup>{guardName}</Popup>
+                </Marker>
+              )}
+              {assignments.map((a) => (
+                <Marker key={a.id} position={[a.lat || 0, a.lng || 0]}>
+                  <Popup>
+                    {a.house_no} {a.street_name} ({a.block})<br />
+                    {doneIds.includes(a.id) ? (
+                      <button
+                        disabled
+                        className="bg-green-500 text-white px-2 py-1 text-xs rounded mt-2"
+                      >
+                        ✅ Done
+                      </button>
+                    ) : (
+                      <label className="bg-blue-500 text-white px-2 py-1 text-xs rounded mt-2 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          hidden
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) handleSnap(file, a);
+                            e.target.value = "";
+                          }}
+                        />
+                        📸 Snap
+                      </label>
+                    )}
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          </div>
+
+          {/* ASSIGNED HOUSES */}
+          <div className="bg-white p-4 rounded-xl shadow mt-3">
+            <h3 className="font-semibold mb-2">🏠 Assigned Houses</h3>
+            {Object.keys(grouped).map((s) => (
+              <div key={s} className="mb-3">
+                <h4 className="font-semibold mb-1">Session {s}</h4>
+                {grouped[s].map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex justify-between border-b py-1 text-sm"
+                  >
+                    <span>
+                      {a.house_no} {a.street_name} ({a.block})
+                    </span>
+                    {doneIds.includes(a.id) ? (
+                      <span className="text-green-600">✅ Done</span>
+                    ) : (
+                      <label className="cursor-pointer text-blue-600">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          hidden
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) handleSnap(file, a);
+                            e.target.value = "";
+                          }}
+                        />
+                        📸 Snap
+                      </label>
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
+      {/* CAMERA */}
       {showCamera && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
-            <video ref={videoRef} width="400" height="300" autoPlay playsInline className="rounded-md" />
+            <video
+              ref={videoRef}
+              width="400"
+              height="300"
+              autoPlay
+              playsInline
+              className="rounded-md"
+            />
             <canvas ref={canvasRef} width="400" height="300" hidden />
             <div className="mt-2 flex gap-2">
-              <button onClick={captureSelfie} className="bg-blue-600 text-white py-2 rounded w-full">Capture</button>
-              <button onClick={() => setShowCamera(false)} className="bg-gray-400 text-black py-2 rounded w-full">Close</button>
+              <button
+                onClick={captureSelfie}
+                className="bg-blue-600 text-white py-2 rounded w-full"
+              >
+                Capture
+              </button>
+              <button
+                onClick={() => setShowCamera(false)}
+                className="bg-gray-400 text-black py-2 rounded w-full"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* LOADING */}
       {loading && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-5 rounded-xl flex flex-col items-center gap-3">
