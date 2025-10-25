@@ -1,11 +1,11 @@
-// ✅ AHE SmartPatrol v2.6 — Reset Register After SelfieOut
-// Force register new guard after each session (Selfie OUT)
+// ✅ AHE SmartPatrol v2.7 — Auto Telegram Summary
+// When guard finishes all houses in a session, system auto-sends summary text to Telegram Admin.
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { getGuardChannel, closeGuardChannel } from "../../lib/guardChannel";
-import { sendTelegramPhoto } from "../../shared/api/telegram";
+import { sendTelegramPhoto, sendTelegramMessage } from "../../shared/api/telegram";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Loader2 } from "lucide-react";
@@ -50,7 +50,7 @@ function PolylineTracker({ center, polylineRef, coordsRef }) {
   return null;
 }
 
-// --- Main Component -----------------------------------------------------------
+// --- Main --------------------------------------------------------------------
 export default function RouteList() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,32 +82,6 @@ export default function RouteList() {
       blockNavRef.current = false;
     };
   }, []);
-
-  // --- Prevent browser reload navigation --------------------------------------
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (allowSelfieOutNav) return;
-      e.preventDefault();
-      e.returnValue = "";
-      return "";
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [allowSelfieOutNav]);
-
-  // --- Stop unwanted route navigation -----------------------------------------
-  useEffect(() => {
-    const stopNav = (e) => {
-      const stayOnRoute = sessionStorage.getItem("stayOnRoute");
-      if (stayOnRoute === "true" && blockNavRef.current && !allowSelfieOutNav) {
-        e.preventDefault();
-        window.history.pushState(null, "", "/guard/routes");
-        return false;
-      }
-    };
-    window.addEventListener("popstate", stopNav);
-    return () => window.removeEventListener("popstate", stopNav);
-  }, [location, allowSelfieOutNav]);
 
   // --- Fetch assignments ------------------------------------------------------
   useEffect(() => {
@@ -187,7 +161,40 @@ export default function RouteList() {
     [guardPos, guardName, plateNo]
   );
 
-  // --- Camera (Selfie IN / OUT) -----------------------------------------------
+  // --- Auto Telegram Summary --------------------------------------------------
+  useEffect(() => {
+    if (!assignments.length) return;
+
+    const grouped = assignments.reduce((a, r) => {
+      (a[r.session_no || 0] ||= []).push(r);
+      return a;
+    }, {});
+
+    Object.keys(grouped).forEach(async (sessionNo) => {
+      const houses = grouped[sessionNo];
+      const total = houses.length;
+      const doneCount = houses.filter((h) => doneIds.includes(h.id)).length;
+
+      if (total > 0 && total === doneCount) {
+        if (!sessionStorage.getItem(`summarySent_${sessionNo}`)) {
+          sessionStorage.setItem(`summarySent_${sessionNo}`, "true");
+
+          const msg = `🧾 *Patrol Summary*
+👮 ${guardName}
+🏍️ ${plateNo}
+🏘️ Session ${sessionNo}
+✅ Houses Done: ${total}/${total}
+📍 Prima Residensi Utama
+🕓 ${new Date().toLocaleString()}`;
+
+          await sendTelegramMessage(msg);
+          toast.success(`📨 Session ${sessionNo} report sent`);
+        }
+      }
+    });
+  }, [doneIds]);
+
+  // --- Selfie Camera Logic ----------------------------------------------------
   const openCamera = async (t) => {
     setSelfieType(t);
     setShowCamera(true);
@@ -228,7 +235,7 @@ export default function RouteList() {
       closeGuardChannel();
       toast.success("✅ Patrol Ended");
 
-      // 🧹 Reset guard data after session done
+      // 🧹 Reset guard info for next session
       localStorage.removeItem("guardName");
       localStorage.removeItem("plateNo");
       localStorage.removeItem("registered");
@@ -254,8 +261,7 @@ export default function RouteList() {
     <div className="min-h-screen bg-[#f7faff] p-4 space-y-4 pb-16">
       <h1 className="text-2xl font-bold text-[#0B132B]">Guard Routes</h1>
 
-      {/* Guard Registration Form */}
-      {!registered && (
+      {!registered ? (
         <div className="bg-white p-4 rounded-xl shadow">
           <input
             placeholder="Guard Name"
@@ -284,10 +290,7 @@ export default function RouteList() {
             Save
           </button>
         </div>
-      )}
-
-      {/* Main Patrol View */}
-      {registered && (
+      ) : (
         <>
           <div className="flex gap-2">
             <button
@@ -304,7 +307,6 @@ export default function RouteList() {
             </button>
           </div>
 
-          {/* MAP */}
           <div className="h-[360px] rounded-xl overflow-hidden shadow bg-white mt-3">
             <MapContainer
               center={guardPos || [5.65, 100.5]}
@@ -355,48 +357,9 @@ export default function RouteList() {
               ))}
             </MapContainer>
           </div>
-
-          {/* ASSIGNED HOUSES */}
-          <div className="bg-white p-4 rounded-xl shadow mt-3">
-            <h3 className="font-semibold mb-2">🏠 Assigned Houses</h3>
-            {Object.keys(grouped).map((s) => (
-              <div key={s} className="mb-3">
-                <h4 className="font-semibold mb-1">Session {s}</h4>
-                {grouped[s].map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex justify-between border-b py-1 text-sm"
-                  >
-                    <span>
-                      {a.house_no} {a.street_name} ({a.block})
-                    </span>
-                    {doneIds.includes(a.id) ? (
-                      <span className="text-green-600">✅ Done</span>
-                    ) : (
-                      <label className="cursor-pointer text-blue-600">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          hidden
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) handleSnap(file, a);
-                            e.target.value = "";
-                          }}
-                        />
-                        📸 Snap
-                      </label>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
         </>
       )}
 
-      {/* CAMERA */}
       {showCamera && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-4 rounded-xl shadow-lg w-[420px]">
@@ -427,7 +390,6 @@ export default function RouteList() {
         </div>
       )}
 
-      {/* LOADING */}
       {loading && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-5 rounded-xl flex flex-col items-center gap-3">
