@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // fetch profile
+  // ✅ Fetch profile safely
   const loadProfile = async (uid) => {
     try {
       const { data, error } = await supabase
@@ -31,21 +31,20 @@ export const AuthProvider = ({ children }) => {
 
     const handleSession = async (sessionUser) => {
       if (!active) return;
+
       if (sessionUser) {
         setUser(sessionUser);
         const prof = await loadProfile(sessionUser.id);
-        if (prof) {
-          setProfile(prof);
-          redirectByRole(prof.role);
-        } else {
-          const fallback = {
+
+        const profileData =
+          prof || {
             email: sessionUser.email,
             role: "admin",
             full_name: "System Admin",
           };
-          setProfile(fallback);
-          redirectByRole(fallback.role);
-        }
+
+        setProfile(profileData);
+        redirectByRole(profileData.role);
       } else {
         setUser(null);
         setProfile(null);
@@ -53,7 +52,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     };
 
-    // combine session + listener
+    // ✅ Initialize + listener
     const init = async () => {
       const { data } = await supabase.auth.getSession();
       const currentUser = data?.session?.user ?? null;
@@ -71,14 +70,37 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // ✅ PATCHED — Prevent redirect if already on guard route
   const redirectByRole = (role) => {
     setTimeout(() => {
-      if (role === "admin") navigate("/admin/dashboard");
-      else if (role === "guard") navigate("/guard/dashboard");
-      else navigate("/");
+      const currentPath = window.location.pathname;
+
+      // Admins: only redirect if not already in admin path
+      if (role === "admin" && !currentPath.startsWith("/admin")) {
+        navigate("/admin/dashboard");
+      }
+
+      // Guards: only redirect if NOT already on a guard route
+      else if (role === "guard") {
+        const isGuardRoute =
+          currentPath.startsWith("/guard/routes") ||
+          currentPath.startsWith("/guard/report") ||
+          currentPath.startsWith("/guard/selfie") ||
+          currentPath.startsWith("/guard/dashboard");
+
+        if (!isGuardRoute) {
+          navigate("/guard/dashboard");
+        }
+      }
+
+      // Others: default to home
+      else if (role !== "admin" && role !== "guard") {
+        navigate("/");
+      }
     }, 200);
   };
 
+  // ✅ Safe sign out
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
