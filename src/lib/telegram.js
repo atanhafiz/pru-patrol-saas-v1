@@ -34,3 +34,24 @@ export const sendTelegramPhoto = async (photoUrl, caption) => {
     throw err;
   }
 };
+// ✅ Text-only Telegram message (for patrol summary)
+export async function sendTelegramMessage(text) {
+  try {
+    const token = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+    const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+
+    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const body = { chat_id: chatId, text, parse_mode: "Markdown" };
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) throw new Error(`Telegram sendMessage failed (${res.status})`);
+    console.log("✅ Telegram text sent:", text);
+  } catch (err) {
+    console.error("❌ Telegram message error:", err.message);
+  }
+}
