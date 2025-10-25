@@ -1,6 +1,6 @@
-// ✅ AHE SmartPatrol v2.0 (Stable English)
-// RouteList.jsx — guard routes + selfie + Telegram + smooth map
-// Works with dynamic guards (no fixed name), English captions, and smoother map tracking
+// ✅ AHE SmartPatrol v2.1 (Stable GPS + Smooth Polyline)
+// RouteList.jsx — guard routes + selfie + Telegram + smoother map tracking
+// Dynamic guard login, live map, Telegram upload (stable)
 
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -16,33 +16,52 @@ import "leaflet/dist/leaflet.css";
 
 let gpsWatchId = null;
 
-// ✅ Center map smoothly
+// ✅ Map flyTo sekali sahaja masa mula
 function MapCenter({ center, zoom }) {
   const map = useMap();
+  const hasCenteredRef = useRef(false);
+
   useEffect(() => {
-    if (center && map) {
-      map.flyTo(center, zoom || 17, { animate: true, duration: 1.2 });
+    if (center && map && !hasCenteredRef.current) {
+      map.flyTo(center, zoom || 17, { animate: true, duration: 1.3 });
+      hasCenteredRef.current = true;
     }
   }, [center, map, zoom]);
   return null;
 }
 
-// ✅ Track guard polyline
+// ✅ Stable polyline tracker — filter jitter + debounce
 function PolylineTracker({ center, polylineRef, coordsRef }) {
   const map = useMap();
+  const lastUpdateRef = useRef(0);
+
   useEffect(() => {
     if (!center || !map) return;
+    const now = Date.now();
+    // 🕐 Debounce 1.5s
+    if (now - lastUpdateRef.current < 1500) return;
+    lastUpdateRef.current = now;
+
+    const last = coordsRef.current.at(-1);
+    if (last) {
+      // 🧭 Skip if movement < 3 m (≈0.00003°)
+      const dx = Math.abs(center[0] - last[0]);
+      const dy = Math.abs(center[1] - last[1]);
+      if (dx < 0.00003 && dy < 0.00003) return;
+    }
+
     coordsRef.current.push(center);
     if (!polylineRef.current) {
       polylineRef.current = L.polyline(coordsRef.current, {
-        color: "green",
+        color: "#00b300",
         weight: 4,
-        opacity: 0.8,
+        opacity: 0.85,
+        smoothFactor: 1,
       }).addTo(map);
     } else {
-      polylineRef.current.setLatLngs(coordsRef.current);
+      polylineRef.current.addLatLng(center);
     }
-  }, [center, map, coordsRef, polylineRef]);
+  }, [center, map]);
   return null;
 }
 
@@ -64,7 +83,7 @@ export default function RouteList() {
   const polylineRef = useRef(null);
   const coordsRef = useRef([]);
 
-  // ✅ Fetch all pending houses for the community
+  // ✅ Fetch patrol assignments
   const fetchAssignments = async () => {
     try {
       const { data, error } = await supabase
@@ -86,14 +105,25 @@ export default function RouteList() {
     fetchAssignments();
   }, []);
 
-  // ✅ GPS + Realtime channel broadcast
+  // ✅ GPS tracking + broadcast (stabil)
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      toast.error("GPS not supported");
+      return;
+    }
 
     gpsWatchId = navigator.geolocation.watchPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setGuardPos([latitude, longitude]);
+        const { latitude, longitude, accuracy } = pos.coords;
+        if (accuracy > 15) return; // 🚫 Skip low accuracy (>15m)
+
+        setGuardPos((prev) => {
+          if (!prev) return [latitude, longitude];
+          const dx = Math.abs(latitude - prev[0]);
+          const dy = Math.abs(longitude - prev[1]);
+          if (dx < 0.00003 && dy < 0.00003) return prev; // 🚫 Skip small move
+          return [latitude, longitude];
+        });
 
         try {
           const ch = getGuardChannel();
@@ -112,7 +142,7 @@ export default function RouteList() {
         }
       },
       (err) => console.warn("⚠️ GPS error:", err.message),
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
     );
 
     return () => {
@@ -120,7 +150,7 @@ export default function RouteList() {
     };
   }, [guardName]);
 
-  // ✅ Upload to Supabase
+  // ✅ Upload helper
   const uploadToSupabase = async (filePath, blob) => {
     const { error } = await supabase.storage
       .from("patrol-photos")
@@ -132,7 +162,7 @@ export default function RouteList() {
     return data.publicUrl;
   };
 
-  // ✅ Capture house snap
+  // ✅ Snap photo & send Telegram
   const handleSnap = async (file, a) => {
     if (!file || !a) return;
     if (uploadingRef.current.has(a.id)) return;
@@ -158,7 +188,7 @@ export default function RouteList() {
     }
   };
 
-  // ✅ Camera control
+  // ✅ Camera control (selfie)
   const openCamera = async (type) => {
     setSelfieType(type);
     setShowCamera(true);
@@ -199,7 +229,7 @@ export default function RouteList() {
     }
   };
 
-  // ✅ Group sessions
+  // ✅ Group houses by session
   const grouped = assignments.reduce((acc, a) => {
     const s = a.session_no || 0;
     if (!acc[s]) acc[s] = [];
@@ -211,7 +241,7 @@ export default function RouteList() {
     <div className="min-h-screen bg-[#f7faff] p-4 space-y-4 pb-16">
       <h1 className="text-2xl font-bold text-[#0B132B]">Guard Routes</h1>
 
-      {/* Register Form */}
+      {/* Registration */}
       {!registered && (
         <div className="bg-white p-4 rounded-xl shadow">
           <input
@@ -242,7 +272,7 @@ export default function RouteList() {
         </div>
       )}
 
-      {/* Routes View */}
+      {/* Active Patrol View */}
       {registered && (
         <>
           <div className="flex gap-2">
@@ -297,9 +327,7 @@ export default function RouteList() {
                           accept="image/*"
                           capture="environment"
                           hidden
-                          onChange={(e) =>
-                            handleSnap(e.target.files[0], a)
-                          }
+                          onChange={(e) => handleSnap(e.target.files[0], a)}
                         />
                         📸 Snap
                       </label>
@@ -333,9 +361,7 @@ export default function RouteList() {
                           accept="image/*"
                           capture="environment"
                           hidden
-                          onChange={(e) =>
-                            handleSnap(e.target.files[0], a)
-                          }
+                          onChange={(e) => handleSnap(e.target.files[0], a)}
                         />
                         📸 Snap
                       </label>
@@ -379,6 +405,7 @@ export default function RouteList() {
         </div>
       )}
 
+      {/* Uploading overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
           <div className="bg-white p-5 rounded-xl flex flex-col items-center gap-3">
