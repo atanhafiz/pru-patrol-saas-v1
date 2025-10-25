@@ -1,4 +1,4 @@
-// router.jsx — AHE SmartPatrol GuardApp CLEAN VERSION (No _v11, No Timeline)
+// router.jsx — AHE SmartPatrol GuardApp CLEAN VERSION (Patched Anti-Redirect)
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
@@ -20,20 +20,37 @@ export default function AppRouter() {
         {/* Default guard page → terus ke Routes */}
         <Route path="/" element={<Navigate to="/guard/routes" replace />} />
 
-        {/* Guard Pages */}
-        <Route path="/guard/routes" element={<RouteList />} />
+        {/* ✅ Guard Pages — kekalkan dalam RouteList walaupun reload */}
+        <Route
+          path="/guard/routes"
+          element={<PersistentGuardRoute component={<RouteList />} />}
+        />
         <Route path="/guard/report" element={<ReportPage />} />
         <Route path="/guard/selfie" element={<SelfiePage />} />
 
-        {/* Admin Pages (if needed later) */}
+        {/* Admin Pages */}
         <Route path="/admin/dashboard" element={<Dashboard />} />
         <Route path="/guard/login" element={<Login />} />
         <Route path="/guard/register" element={<Register />} />
 
         {/* Fallback (anything else → routes) */}
         <Route path="*" element={<Navigate to="/guard/routes" replace />} />
-
       </Routes>
     </Router>
   );
+}
+
+/* ✅ Mini wrapper: kekalkan guard di RouteList walau registered hilang sementara */
+function PersistentGuardRoute({ component }) {
+  const registered =
+    localStorage.getItem("registered") === "true" ||
+    sessionStorage.getItem("registered") === "true";
+
+  // Kalau guard belum register langsung, baru redirect ke login
+  if (!registered) {
+    return <Navigate to="/guard/login" replace />;
+  }
+
+  // Selain tu, kekalkan page (no redirect ke dashboard)
+  return component;
 }
