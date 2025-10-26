@@ -234,38 +234,56 @@ export default function RouteList() {
   };
 
   const captureSelfie = async () => {
-    const c = canvasRef.current;
-    const x = c.getContext("2d");
-    x.translate(c.width, 0);
-    x.scale(-1, 1);
-    x.drawImage(videoRef.current, 0, 0, 400, 300);
-    const blob = await (await fetch(c.toDataURL("image/jpeg"))).blob();
-    const ts = Date.now();
-    const path = `selfies/${guardName}_${selfieType}_${ts}.jpg`;
-    const url = await uploadToSupabase(path, blob);
-    const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
-    const caption =
-      selfieType === "selfieIn"
-        ? `🚨 Guard On Duty\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
-        : `✅ Patrol Ended\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
-    await sendTelegramPhoto(url, caption);
-    setShowCamera(false);
-
-    if (selfieType === "selfieOut") {
-      closeGuardChannel();
-      toast.success("✅ Patrol Ended");
-      ["guardName", "plateNo", "registered"].forEach((k) =>
-        localStorage.removeItem(k)
-      );
-      sessionStorage.removeItem("stayOnRoute");
-      blockNavRef.current = false;
-      setAllowSelfieOutNav(true);
-      setTimeout(() => {
-        navigate("/guard/dashboard");
-      }, 600);
+    try {
+      setLoading(true);
+      toast.loading("Uploading selfie...");
+  
+      const c = canvasRef.current;
+      const x = c.getContext("2d");
+      x.translate(c.width, 0);
+      x.scale(-1, 1);
+      x.drawImage(videoRef.current, 0, 0, 400, 300);
+      const blob = await (await fetch(c.toDataURL("image/jpeg"))).blob();
+      const ts = Date.now();
+      const path = `selfies/${guardName}_${selfieType}_${ts}.jpg`;
+      const url = await uploadToSupabase(path, blob);
+      const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
+  
+      const caption =
+        selfieType === "selfieIn"
+          ? `🚨 Guard to START PATROL \n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
+          : `✅ PATROL ENDED\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
+  
+      await sendTelegramPhoto(url, caption);
+  
+      toast.dismiss();
+      toast.success("✅ Selfie sent to Telegram!");
+      setShowCamera(false);
+  
+      // 🔥 tambahan bahagian selfieOut
+      if (selfieType === "selfieOut") {
+        closeGuardChannel();
+        toast.success("✅ Patrol Ended — returning to Dashboard...");
+        ["guardName", "plateNo", "registered"].forEach((k) =>
+          localStorage.removeItem(k)
+        );
+        sessionStorage.removeItem("stayOnRoute");
+        blockNavRef.current = false;
+        setAllowSelfieOutNav(true);
+  
+        setTimeout(() => {
+          navigate("/guard/dashboard");
+        }, 1200);
+      }
+    } catch (err) {
+      toast.dismiss();
+      console.error("Selfie upload error:", err.message);
+      toast.error("❌ Failed to send selfie. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
-
+  
   // --- Group Assignments ------------------------------------------------------
   const grouped = assignments.reduce((a, r) => {
     (a[r.session_no || 0] ||= []).push(r);
