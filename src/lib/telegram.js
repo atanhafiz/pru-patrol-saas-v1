@@ -39,7 +39,7 @@ export function buildCaption(type, data = {}) {
     case "houseSnap":
       return `🏠 *Patrol Checkpoint*\n📍 ${house} ${street} (${block})\n👮 ${guardName}\n🏍️ ${plateNo}\n📌 ${locationText}\n🕓 ${time}`;
     case "incident":
-      return `🚨 *INCIDENT REPORTED*\n📄 *${title || "Untitled Incident"}*\n📝 ${description || "No description"}\n👮 Reported By: ${guardName}\n📍 ${locationText}\n🕒 ${time}`;
+      return `🚨 *INCIDENT REPORTED*\n📝 ${description || "No description"}\n👮 Reported By: ${guardName}\n📍 ${locationText}\n🕒 ${time}`;
     default:
       return `📝 ${description || "No details"}\n🕒 ${time}`;
   }
@@ -85,5 +85,41 @@ export async function sendTelegramMessage(text) {
     console.log("✅ Telegram text sent");
   } catch (err) {
     console.error("❌ Telegram message error:", err.message);
+  }
+}
+
+/**
+ * 🏢 Intro message – Auto send to group when system starts
+ */
+export async function sendTelegramIntro() {
+  try {
+    const message = `
+🏢 *AHE SmartPatrol – Prima Residensi Utama®️*  
+──────────────────────  
+Welcome to the official *AHE SmartPatrol* group for Prima Residensi Utama®️.  
+All patrol updates, incidents, and guard activities will appear here in real-time.  
+
+*Photo & Location Updates:*  
+Guards will post route photos, patrol start/stop, and incident reports automatically.  
+
+*System Active:* Real-time monitoring is now online.  
+──────────────────────  
+_Powered by AHE Technology Sdn Bhd_
+    `;
+
+    const res = await fetch(`${BASE_URL}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: message,
+        parse_mode: "Markdown",
+      }),
+    });
+
+    if (!res.ok) throw new Error(`Intro message failed (${res.status})`);
+    console.log("✅ Intro message sent to Telegram group");
+  } catch (err) {
+    console.error("❌ Telegram intro error:", err.message);
   }
 }

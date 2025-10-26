@@ -5,11 +5,13 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Bell, ShieldCheck, ClipboardCheck, Users } from "lucide-react";
+import { sendTelegramIntro } from "../../lib/telegram";
 import { Link } from "react-router-dom";
 import MapRealtime from "../../components/shared/MapRealtime";
 import RouteAssignment from "../../components/admin/RouteAssignment";
 import RouteStatusAlert from "../../components/admin/RouteStatusAlert";
 import AdminLayout_Clean from "../../layouts/AdminLayout_Clean";
+
 
 export default function Dashboard() {
   const [assignments, setAssignments] = useState([]);
@@ -21,7 +23,23 @@ export default function Dashboard() {
   useEffect(() => {
     fetchAssignments();
     fetchDashboardMetrics();
+    sendTelegramIntro();
   }, []);
+
+// 🚀 Auto-send Telegram welcome message (strict once per day)
+useEffect(() => {
+  const today = new Date().toDateString();
+  const lastSent = localStorage.getItem("introSent");
+  const alreadySent = sessionStorage.getItem("introSentSession");
+
+  // ✅ only send if not sent today AND not yet in this session
+  if (lastSent !== today && !alreadySent) {
+    sendTelegramIntro();
+    localStorage.setItem("introSent", today);
+    sessionStorage.setItem("introSentSession", "true");
+  }
+}, []);
+
 
   const fetchAssignments = async () => {
     const { data, error } = await supabase
