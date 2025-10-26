@@ -12,8 +12,9 @@ export default function IncidentForm_v11() {
   const [preview, setPreview] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
-  const [guardName, setGuardName] = useState(localStorage.getItem("guardName") || "");
-  const [plateNo, setPlateNo] = useState(localStorage.getItem("plateNo") || "");
+  // 🧹 Always start with empty input (no default from localStorage)
+  const [guardName, setGuardName] = useState("");
+  const [plateNo, setPlateNo] = useState("");
   const [mode, setMode] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const videoRef = useRef(null);
@@ -68,6 +69,8 @@ export default function IncidentForm_v11() {
 
   const resetForm = () => {
     setDescription("");
+    setGuardName("");
+    setPlateNo("");
     setPhoto(null);
     setPreview("");
     setPhotoPreview("");

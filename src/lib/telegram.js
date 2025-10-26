@@ -10,19 +10,38 @@ const BASE_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
  * type = selfieIn | selfieOut | houseSnap | incident
  */
 export function buildCaption(type, data = {}) {
-  const { guardName, plateNo, lat, lng, time, house, street, block, title, description } = data;
+  const { guardName, plateNo, lat, lng, house, street, block, title, description } = data;
+
+  // 🇲🇾 Timezone Malaysia (UTC+8)
+  const now = new Date();
+  const malaysiaTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  const time = malaysiaTime.toLocaleString("en-MY", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  // GPS check
+  const hasGPS = lat && lng && !isNaN(lat) && !isNaN(lng);
+  const locationText = hasGPS
+    ? `[Open in Google Maps](https://www.google.com/maps?q=${lat},${lng})`
+    : "🛰️ GPS Not Detected";
 
   switch (type) {
     case "selfieIn":
-      return `🚨 *Guard On Duty*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 [Open in Google Maps](https://www.google.com/maps?q=${lat},${lng})\n🕒 ${time}`;
+      return `🚨 *Guard START PATROL*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${locationText}\n🕒 ${time}`;
     case "selfieOut":
-      return `✅ *Patrol Ended*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 [Last Location](https://www.google.com/maps?q=${lat},${lng})\n🕒 ${time}`;
+      return `✅ *Guard END PATROL*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${locationText}\n🕒 ${time}`;
     case "houseSnap":
-      return `🏠 *Patrol Checkpoint*\n📍 ${house} ${street} (${block})\n👮 ${guardName}\n🏍️ ${plateNo}\n📌 [Open Map](https://www.google.com/maps?q=${lat},${lng})\n🕓 ${time}`;
+      return `🏠 *Patrol Checkpoint*\n📍 ${house} ${street} (${block})\n👮 ${guardName}\n🏍️ ${plateNo}\n📌 ${locationText}\n🕓 ${time}`;
     case "incident":
-      return `🚨 *INCIDENT REPORTED*\n📄 *${title || "Untitled Incident"}*\n📝 ${description || "No description"}\n👮 Reported By: ${guardName}\n📍 [Location](https://www.google.com/maps?q=${lat},${lng})\n🕒 ${time}`;
+      return `🚨 *INCIDENT REPORTED*\n📄 *${title || "Untitled Incident"}*\n📝 ${description || "No description"}\n👮 Reported By: ${guardName}\n📍 ${locationText}\n🕒 ${time}`;
     default:
-      return `📝 ${description || "No details"}`;
+      return `📝 ${description || "No details"}\n🕒 ${time}`;
   }
 }
 

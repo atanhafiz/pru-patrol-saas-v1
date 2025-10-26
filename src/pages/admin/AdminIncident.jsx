@@ -1,5 +1,5 @@
-// ✅ AHE SmartPatrol – Admin Incident Management (Clean UI v2.1 Fixed)
-// Restored image preview + backward support for photo_url
+// ✅ AHE SmartPatrol – Admin Incident Management (Clean UI v2.2)
+// Added back button + bold description + restored image preview
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
@@ -73,15 +73,36 @@ export default function AdminIncident() {
         transition={{ duration: 0.4 }}
         className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-6 flex justify-between items-center"
       >
-        <div>
-          <h1 className="text-3xl font-extrabold text-[#0B132B] flex items-center gap-2">
-            <AlertTriangle className="text-red-500 w-7 h-7" />
-            Incident Management
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Review and manage all reported incidents in real-time.
-          </p>
+        <div className="flex items-center gap-3">
+          {/* 🔙 Back Button */}
+          <button
+            onClick={() => window.history.back()}
+            className="p-2 rounded-full hover:bg-gray-100 transition"
+            title="Back"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="w-5 h-5 text-gray-700"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <div>
+            <h1 className="text-3xl font-extrabold text-[#0B132B] flex items-center gap-2">
+              <AlertTriangle className="text-red-500 w-7 h-7" />
+              Incident Management
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">
+              Review and manage all reported incidents in real-time.
+            </p>
+          </div>
         </div>
+
         {incidents.length > 0 && (
           <button
             onClick={clearAll}
@@ -118,11 +139,15 @@ export default function AdminIncident() {
                 </button>
               </div>
 
-              {/* Title + Description */}
-              <h3 className="font-semibold text-[#0B132B] mb-2">
-                {i.title || "Untitled Incident"}
-              </h3>
-              <p className="text-sm text-gray-600 mb-3 whitespace-pre-line">
+              {/* ✅ Only show title if available */}
+              {i.title && (
+                <h3 className="font-semibold text-[#0B132B] mb-2">
+                  {i.title}
+                </h3>
+              )}
+
+              {/* ✅ Bold Description */}
+              <p className="text-sm text-gray-900 font-semibold mb-3 whitespace-pre-line">
                 {i.description || "No details provided."}
               </p>
 

@@ -247,12 +247,25 @@ export default function RouteList() {
       const ts = Date.now();
       const path = `selfies/${guardName}_${selfieType}_${ts}.jpg`;
       const url = await uploadToSupabase(path, blob);
+  
+// 🕒 Auto use device local timezone (no extra offset)
+const time = new Date().toLocaleString("en-MY", {
+  weekday: "short",
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: true,
+});
+  
       const coords = guardPos ? `${guardPos[0]},${guardPos[1]}` : "No GPS";
   
       const caption =
         selfieType === "selfieIn"
-          ? `🚨 Guard to START PATROL \n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`
-          : `✅ PATROL ENDED\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}`;
+          ? `🚨 Guard START PATROL\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕒 ${time}`
+          : `✅ Patrol ENDED\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕒 ${time}`;
   
       await sendTelegramPhoto(url, caption);
   
@@ -260,7 +273,6 @@ export default function RouteList() {
       toast.success("Selfie sent to Telegram!");
       setShowCamera(false);
   
-      // 🔥 tambahan bahagian selfieOut
       if (selfieType === "selfieOut") {
         closeGuardChannel();
         toast.success("Patrol Ended — returning to Dashboard...");
@@ -283,7 +295,7 @@ export default function RouteList() {
       setLoading(false);
     }
   };
-  
+    
   // --- Group Assignments ------------------------------------------------------
   const grouped = assignments.reduce((a, r) => {
     (a[r.session_no || 0] ||= []).push(r);
