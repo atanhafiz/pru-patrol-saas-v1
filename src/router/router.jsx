@@ -1,4 +1,4 @@
-// router.jsx — AHE SmartPatrol GuardApp FINAL (no redirect logic)
+// ✅ AHE SmartPatrol GuardApp FINAL (no redirect logic)
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
@@ -9,6 +9,7 @@ import SelfiePage from "./pages/guard/SelfiePage";
 
 // Admin + Auth
 import Dashboard from "./pages/admin/Dashboard";
+import AdminIncident from "./pages/admin/AdminIncident"; // ✅ tambah ni
 import Login from "./pages/guard/Login";
 import Register from "./pages/guard/Register";
 
@@ -19,13 +20,16 @@ export default function AppRouter() {
         {/* Default → terus ke guard routes */}
         <Route path="/" element={<Navigate to="/guard/routes" replace />} />
 
-        {/* 🔒 FORCE kekal di route — tak depend registered */}
+        {/* Guard Pages */}
         <Route path="/guard/routes" element={<RouteList />} />
         <Route path="/guard/report" element={<ReportPage />} />
         <Route path="/guard/selfie" element={<SelfiePage />} />
 
-        {/* Admin */}
+        {/* Admin Pages */}
         <Route path="/admin/dashboard" element={<Dashboard />} />
+        <Route path="/admin/incidents" element={<AdminIncident />} /> {/* ✅ tambah ni */}
+
+        {/* Auth */}
         <Route path="/guard/login" element={<Login />} />
         <Route path="/guard/register" element={<Register />} />
 

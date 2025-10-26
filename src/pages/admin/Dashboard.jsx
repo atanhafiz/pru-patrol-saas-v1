@@ -1,10 +1,11 @@
-// ✅ AHE SmartPatrol Admin Dashboard v2.1 (English + Clean UI)
-// Clean white cards + English text + no Malay words
+// ✅ AHE SmartPatrol Admin Dashboard v2.5 (Completed Sessions Added)
+// Clean white cards + English text + single incident button
 
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { Bell, ShieldCheck, ClipboardCheck, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import MapRealtime from "../../components/shared/MapRealtime";
 import RouteAssignment from "../../components/admin/RouteAssignment";
 import RouteStatusAlert from "../../components/admin/RouteStatusAlert";
@@ -14,8 +15,8 @@ export default function Dashboard() {
   const [assignments, setAssignments] = useState([]);
   const [attendanceToday, setAttendanceToday] = useState(0);
   const [activePatrols, setActivePatrols] = useState(0);
-  const [pendingReports, setPendingReports] = useState(0);
   const [incidentsToday, setIncidentsToday] = useState(0);
+  const [completedSessions, setCompletedSessions] = useState(0);
 
   useEffect(() => {
     fetchAssignments();
@@ -32,32 +33,53 @@ export default function Dashboard() {
 
   const fetchDashboardMetrics = async () => {
     try {
-      const today = new Date();
-      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-
+      // 🇲🇾 Malaysia timezone (UTC +8)
+      const now = new Date();
+      const malaysiaTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  
+      // startOfDay = 12:00 AM waktu Malaysia
+      const startOfDay = new Date(
+        malaysiaTime.getFullYear(),
+        malaysiaTime.getMonth(),
+        malaysiaTime.getDate(),
+        0, 0, 0
+      ).toISOString();
+  
+      // ✅ Attendance today
       const { count: attendanceCount } = await supabase
         .from("attendance_log")
         .select("*", { count: "exact" })
         .gte("created_at", startOfDay);
       setAttendanceToday(attendanceCount || 0);
-
+  
+      // ✅ Active patrols
       const { count: patrolCount } = await supabase
         .from("patrol_assignments")
         .select("*", { count: "exact" })
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .gte("created_at", startOfDay);
       setActivePatrols(patrolCount || 0);
-
-      const { count: reportsCount } = await supabase
+  
+      // ✅ Incidents today
+      const { count: incidentsCount } = await supabase
         .from("incidents")
         .select("*", { count: "exact" })
         .gte("created_at", startOfDay);
-      setPendingReports(reportsCount || 0);
-      setIncidentsToday(reportsCount || 0);
+      setIncidentsToday(incidentsCount || 0);
+  
+      // ✅ Completed sessions
+      const { count: completedCount } = await supabase
+        .from("patrol_assignments")
+        .select("*", { count: "exact" })
+        .eq("status", "completed")
+        .gte("created_at", startOfDay);
+      setCompletedSessions(completedCount || 0);
     } catch (err) {
       console.error("Error dashboard metrics:", err.message);
     }
   };
-
+  
+  // ✅ Metric cards
   const metrics = [
     {
       title: "Total Attendance Today",
@@ -70,35 +92,48 @@ export default function Dashboard() {
       icon: <ShieldCheck className="text-green-600 w-6 h-6" />,
     },
     {
-      title: "Reports Logged Today",
-      value: pendingReports,
-      icon: <ClipboardCheck className="text-yellow-500 w-6 h-6" />,
-    },
-    {
       title: "Total Incidents",
       value: incidentsToday,
       icon: <Bell className="text-purple-600 w-6 h-6" />,
+    },
+    {
+      title: "Completed Sessions",
+      value: completedSessions,
+      icon: <ClipboardCheck className="text-emerald-600 w-6 h-6" />,
     },
   ];
 
   return (
     <AdminLayout_Clean>
       <div className="min-h-screen bg-gradient-to-br from-[#f7faff] via-white to-[#edf3ff] p-4 sm:p-10">
+
+        {/* ✅ Header with only Incident Button */}
         <motion.div
-          className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 mb-6"
+          className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-4xl font-extrabold text-[#0B132B] mb-1">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Monitor patrols and incidents in real-time.
-          </p>
+          <div>
+            <h1 className="text-4xl font-extrabold text-[#0B132B] mb-1">
+              Admin Dashboard
+            </h1>
+            <p className="text-gray-500 text-sm">
+              Monitor patrols and incidents in real-time.
+            </p>
+          </div>
+
+          {/* 🔴 Incident Reports Button */}
+          <Link
+            to="/admin/incidents"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+          >
+            <Bell className="w-5 h-5" />
+            🚨 Incident Reports
+          </Link>
         </motion.div>
 
-        {/* Metrics */}
+        {/* ✅ Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {metrics.map((m, i) => (
             <motion.div
@@ -115,11 +150,11 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Live Tracking */}
+        {/* ✅ Map Section (unchanged) */}
         <MapRealtime />
         <div className="my-8"></div>
 
-        {/* Route Assignment */}
+        {/* ✅ Route Assignment + Alerts (unchanged) */}
         <RouteAssignment />
         <RouteStatusAlert />
 

@@ -1,209 +1,157 @@
+// ✅ AHE SmartPatrol – Admin Incident Management (Clean UI v2.1 Fixed)
+// Restored image preview + backward support for photo_url
+
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
-import toast from "react-hot-toast";
 import { supabase } from "../../lib/supabaseClient";
-
-const containerVariants = {
-  hidden: { opacity: 1 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,  // delay between each card
-    },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-  exit: { opacity: 0, scale: 0.9, transition: { duration: 0.25 } },
-};
+import { motion } from "framer-motion";
+import toast from "react-hot-toast";
+import { Trash2, AlertTriangle, Clock } from "lucide-react";
 
 export default function AdminIncident() {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(20);
 
+  // --- Fetch incidents from Supabase
   const fetchIncidents = async () => {
-    setLoading(true);
-    console.log("🚨 ALERT-DEBUG: AdminIncident fetch started");
-    const { data, error } = await supabase
-      .from("incidents")
-      .select("*")
-      .order("created_at", { ascending: false });
-    console.log("🚨 ALERT-DEBUG: AdminIncident fetched incidents", data);
-    console.log("🚨 ALERT-DEBUG: AdminIncident filter used", { no_status_filter: true });
-    console.log("🚨 ALERT-DEBUG: mismatch detected - AdminIncident uses no status filter but AlertCenter uses .eq('status','active')");
-    if (error) {
-      console.error("❌ Supabase incidents error:", error.message);
-    } else {
-      console.log("✅ Supabase incidents fetched:", data?.length);
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("incidents")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
       setIncidents(data || []);
+    } catch (err) {
+      console.error("Error fetching incidents:", err.message);
+      toast.error("Failed to load incidents");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchIncidents();
   }, []);
 
+  // --- Delete single incident
+  const deleteIncident = async (id) => {
+    const confirm = window.confirm("Delete this incident?");
+    if (!confirm) return;
+    try {
+      const { error } = await supabase.from("incidents").delete().eq("id", id);
+      if (error) throw error;
+      toast.success("Incident deleted");
+      setIncidents((prev) => prev.filter((i) => i.id !== id));
+    } catch (err) {
+      toast.error("Failed to delete incident");
+      console.error(err.message);
+    }
+  };
+
+  // --- Delete all incidents
+  const clearAll = async () => {
+    const confirm = window.confirm("Are you sure you want to delete ALL incidents?");
+    if (!confirm) return;
+    try {
+      const { error } = await supabase.from("incidents").delete().neq("id", 0);
+      if (error) throw error;
+      toast.success("All incidents cleared");
+      setIncidents([]);
+    } catch (err) {
+      toast.error("Failed to clear incidents");
+      console.error(err.message);
+    }
+  };
+
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex flex-wrap gap-2 mb-4">
-        <motion.button
-          onClick={() => window.history.back()}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg transition text-sm sm:text-base flex items-center gap-2"
-          whileHover={{ x: -4, scale: 1.03 }}
-          transition={{ type: "spring", stiffness: 300, damping: 15 }}
-        >
-          ← Back
-        </motion.button>
-        <button
-          onClick={() => setShowConfirm(true)}
-          className="ml-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow-lg transition flex items-center gap-2"
-        >
-          🗑️ Clear All
-        </button>
-      </div>
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-primary">🚨 Incident Reports</h2>
-        <button
-          onClick={fetchIncidents}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-        >
-          🔄 Refresh
-        </button>
-      </div>
-
-      {loading ? (
-        <p className="text-gray-500 italic">Loading reports...</p>
-      ) : incidents.length === 0 ? (
-        <p className="text-gray-500 italic">No incident reports found.</p>
-      ) : (
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          <AnimatePresence mode="popLayout">
-            {incidents.slice(0, visibleCount).map((i) => (
-              <motion.div
-                key={i.id}
-                variants={cardVariants}
-                layout
-                className="border rounded-xl shadow p-4 bg-white relative"
-              >
-              <button
-                onClick={async () => {
-                  if (confirm("Delete this incident report?")) {
-                    const { error } = await supabase.from("incidents").delete().eq("id", i.id);
-                    if (!error) {
-                      toast.success("✅ Incident deleted successfully!", {
-                        duration: 4000,
-                        position: "bottom-right",
-                      });
-                      fetchIncidents();
-                    } else {
-                      toast.error("❌ Failed to delete incident. Please try again.", {
-                        duration: 4000,
-                        position: "bottom-right",
-                      });
-                    }
-                  }
-                }}
-                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow transition"
-                title="Delete Incident"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-primary">{i.guard_name || "Guard"}</p>
-                <p className="text-xs text-gray-500">
-                  {new Date(i.created_at).toLocaleString()}
-                </p>
-              </div>
-              <p className="text-sm mb-2">
-                📝 {i.description || i.message || "(No description provided)"}
-              </p>
-              {console.log("📝 INCIDENT DESC CHECK:", i.description, i.message)}
-              {i.photo_url && (
-                <a href={i.photo_url} target="_blank" rel="noreferrer">
-                  <img
-                    src={i.photo_url}
-                    alt="incident"
-                    className="w-full h-48 object-cover rounded-lg border"
-                  />
-                </a>
-              )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-      )}
-
-      {/* Load More Button */}
-      {visibleCount < incidents.length && (
-        <div className="flex justify-center mt-6">
-          <button
-            onClick={() => setVisibleCount((prev) => prev + 20)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow transition"
-          >
-            Load More
-          </button>
+    <div className="min-h-screen bg-[#f7faff] p-6 sm:p-10">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-6 flex justify-between items-center"
+      >
+        <div>
+          <h1 className="text-3xl font-extrabold text-[#0B132B] flex items-center gap-2">
+            <AlertTriangle className="text-red-500 w-7 h-7" />
+            Incident Management
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Review and manage all reported incidents in real-time.
+          </p>
         </div>
-      )}
-
-      {/* Confirmation Modal */}
-      {showConfirm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]"
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-            className="bg-white rounded-xl shadow-2xl p-6 w-[90%] max-w-sm text-center"
+        {incidents.length > 0 && (
+          <button
+            onClick={clearAll}
+            className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-xl shadow-sm transition"
           >
-            <h2 className="text-xl font-bold mb-3 text-gray-800">Confirm Deletion</h2>
-            <p className="text-gray-600 mb-5">Are you sure you want to delete <strong>all incident reports</strong>? This action cannot be undone.</p>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  const { error } = await supabase.from("incidents").delete().neq("id", 0);
-                  if (!error) {
-                    setShowConfirm(false);
-                    toast.success("✅ All incident reports cleared successfully!", {
-                      duration: 4000,
-                      position: "bottom-right",
-                    });
-                    fetchIncidents && fetchIncidents();
-                  } else {
-                    toast.error("❌ Failed to delete incidents. Please try again.", {
-                      duration: 4000,
-                      position: "bottom-right",
-                    });
-                  }
-                }}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
-              >
-                Yes, Delete All
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
+            Clear All
+          </button>
+        )}
+      </motion.div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="text-center text-gray-500 mt-10">Loading incidents...</div>
+      ) : incidents.length === 0 ? (
+        <div className="text-center text-gray-400 mt-10">No incidents reported yet.</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {incidents.map((i) => (
+            <motion.div
+              key={i.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all p-5 relative"
+            >
+              {/* Delete Button */}
+              <div className="absolute top-3 right-3">
+                <button
+                  onClick={() => deleteIncident(i.id)}
+                  className="text-gray-400 hover:text-red-600 transition"
+                  title="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Title + Description */}
+              <h3 className="font-semibold text-[#0B132B] mb-2">
+                {i.title || "Untitled Incident"}
+              </h3>
+              <p className="text-sm text-gray-600 mb-3 whitespace-pre-line">
+                {i.description || "No details provided."}
+              </p>
+
+              {/* ✅ Image Preview Fix */}
+              {(i.image_url || i.photo_url) && (
+                <img
+                  src={i.image_url || i.photo_url}
+                  alt="incident"
+                  className="rounded-lg border border-gray-200 mb-3 w-full object-cover shadow-sm"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    console.warn("⚠️ Incident image failed to load:", i.image_url);
+                  }}
+                />
+              )}
+
+              {/* Footer Info */}
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  {new Date(i.created_at).toLocaleString()}
+                </div>
+                <span className="font-semibold text-blue-600">
+                  {i.guard_name || "Unknown Guard"}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       )}
     </div>
   );

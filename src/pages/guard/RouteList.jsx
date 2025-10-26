@@ -257,13 +257,13 @@ export default function RouteList() {
       await sendTelegramPhoto(url, caption);
   
       toast.dismiss();
-      toast.("Selfie sent to Telegram!");
+      toast.success("Selfie sent to Telegram!");
       setShowCamera(false);
   
       // 🔥 tambahan bahagian selfieOut
       if (selfieType === "selfieOut") {
         closeGuardChannel();
-        toast.("Patrol Ended — returning to Dashboard...");
+        toast.success("Patrol Ended — returning to Dashboard...");
         ["guardName", "plateNo", "registered"].forEach((k) =>
           localStorage.removeItem(k)
         );

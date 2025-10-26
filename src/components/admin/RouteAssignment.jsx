@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../../lib/supabaseClient";
-import { ClipboardList, Trash2, Image as ImageIcon } from "lucide-react";
+import { ClipboardList, Trash2 } from "lucide-react";
 import Papa from "papaparse";
 
 export default function RouteAssignment() {
@@ -84,7 +84,6 @@ export default function RouteAssignment() {
         block,
         session_no: Number(sessionNo),
         status: "pending",
-        photo_url: null,
       },
     ]);
     setStatusMsg(error ? "❌ Failed to add assignment." : "✅ Assignment added successfully!");
@@ -115,33 +114,9 @@ export default function RouteAssignment() {
         🧭 Route Assignment
       </h3>
 
-      {/* Form Section */}
+      {/* 🧩 Form Section (Session moved to front) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-5">
-       
-        <select
-          value={selectedHouse}
-          onChange={(e) => handleSelectHouse(e.target.value)}
-          className="border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">Select House Number</option>
-          {houseList.map((r, i) => (
-            <option key={i} value={r.house_number}>
-              {r.house_number}
-            </option>
-          ))}
-        </select>
-        <input
-          value={streetName}
-          disabled
-          className="border border-gray-200 rounded-xl px-3 py-2 bg-gray-100"
-          placeholder="Street"
-        />
-        <input
-          value={block}
-          disabled
-          className="border border-gray-200 rounded-xl px-3 py-2 bg-gray-100"
-          placeholder="Block"
-        />
+        {/* ✅ Select Session - now in front */}
         <select
           value={sessionNo}
           onChange={(e) => setSessionNo(e.target.value)}
@@ -154,6 +129,38 @@ export default function RouteAssignment() {
             </option>
           ))}
         </select>
+
+        {/* Select House */}
+        <select
+          value={selectedHouse}
+          onChange={(e) => handleSelectHouse(e.target.value)}
+          className="border border-gray-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Select House Number</option>
+          {houseList.map((r, i) => (
+            <option key={i} value={r.house_number}>
+              {r.house_number}
+            </option>
+          ))}
+        </select>
+
+        {/* Street */}
+        <input
+          value={streetName}
+          disabled
+          className="border border-gray-200 rounded-xl px-3 py-2 bg-gray-100"
+          placeholder="Street"
+        />
+
+        {/* Block */}
+        <input
+          value={block}
+          disabled
+          className="border border-gray-200 rounded-xl px-3 py-2 bg-gray-100"
+          placeholder="Block"
+        />
+
+        {/* Assign Button */}
         <button
           onClick={handleAssign}
           className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2 rounded-xl font-semibold shadow-md hover:shadow-lg transition"
@@ -174,10 +181,10 @@ export default function RouteAssignment() {
               <th className="p-3">Street</th>
               <th className="p-3">Block</th>
               <th className="p-3 text-center">Session</th>
-              <th className="p-3 text-center">Photo Proof</th>
               <th className="p-3 text-center">Action</th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-gray-100">
             {assignments.map((a) => (
               <tr key={a.id} className="hover:bg-gray-50 transition">
@@ -186,22 +193,6 @@ export default function RouteAssignment() {
                 <td className="p-3">{a.street_name}</td>
                 <td className="p-3">{a.block}</td>
                 <td className="p-3 text-center">{a.session_no}</td>
-                <td className="p-3 text-center">
-                  {a.photo_url ? (
-                    <a
-                      href={a.photo_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-500 underline"
-                    >
-                      View
-                    </a>
-                  ) : (
-                    <span className="text-gray-400 italic flex items-center justify-center gap-1">
-                      <ImageIcon className="w-4 h-4" /> None
-                    </span>
-                  )}
-                </td>
                 <td className="p-3 text-center">
                   <button
                     onClick={() => handleDelete(a.id)}
