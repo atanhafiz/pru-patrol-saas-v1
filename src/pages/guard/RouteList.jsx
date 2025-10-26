@@ -177,7 +177,7 @@ export default function RouteList() {
         );
 
         setDoneIds((prev) => [...new Set([...prev, assignment.id])]);
-        toast.success(`✅ ${assignment.house_no} uploaded successfully`);
+        toast.success(`${assignment.house_no} uploaded successfully`);
       } catch (e) {
         toast.error("Upload failed: " + e.message);
       } finally {
@@ -257,13 +257,13 @@ export default function RouteList() {
       await sendTelegramPhoto(url, caption);
   
       toast.dismiss();
-      toast.success("✅ Selfie sent to Telegram!");
+      toast.success("Selfie sent to Telegram!");
       setShowCamera(false);
   
       // 🔥 tambahan bahagian selfieOut
       if (selfieType === "selfieOut") {
         closeGuardChannel();
-        toast.success("✅ Patrol Ended — returning to Dashboard...");
+        toast.success("Patrol Ended — returning to Dashboard...");
         ["guardName", "plateNo", "registered"].forEach((k) =>
           localStorage.removeItem(k)
         );
