@@ -272,8 +272,9 @@ export default function RouteList() {
     return a;
   }, {});
 
-  // --- UI ---------------------------------------------------------------------
-  return (
+// --- UI ---------------------------------------------------------------------
+return (
+  <>
     <div className="min-h-screen bg-[#f7faff] p-4 space-y-4 pb-16">
       <h1 className="text-2xl font-bold text-[#0B132B]">Guard Routes</h1>
 
@@ -378,43 +379,77 @@ export default function RouteList() {
             </MapContainer>
           </div>
 
-          {/* 🏘️ Assigned Houses List Restored */}
-          <div className="bg-white p-4 rounded-xl shadow mt-3">
-            <h3 className="font-semibold mb-2">🏠 Assigned Houses</h3>
+          {/* 🏘️ Assigned Houses (Final Polished v3.5) */}
+          <div className="bg-white/95 backdrop-blur-sm p-6 rounded-2xl shadow-md border border-gray-100 mt-4">
+            <div className="flex items-center gap-2 mb-5">
+              <span className="text-2xl">🏠</span>
+              <h3 className="text-lg font-semibold text-[#0B132B] tracking-tight">
+                Assigned Houses
+              </h3>
+            </div>
+
             {Object.keys(grouped).length === 0 ? (
-              <p className="text-gray-500 text-sm">No assigned houses.</p>
+              <p className="text-gray-500 text-sm text-center py-3">
+                No assigned houses yet.
+              </p>
             ) : (
               Object.keys(grouped).map((s) => (
-                <div key={s} className="mb-3">
-                  <h4 className="font-semibold mb-1">Session {s}</h4>
-                  {grouped[s].map((a) => (
-                    <div
-                      key={a.id}
-                      className="flex justify-between border-b py-1 text-sm"
-                    >
-                      <span>
-                        {a.house_no} {a.street_name} ({a.block})
-                      </span>
-                      {doneIds.includes(a.id) ? (
-                        <span className="text-green-600">✅ Done</span>
-                      ) : (
-                        <label className="cursor-pointer text-blue-600">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            hidden
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) handleSnap(file, a);
-                              e.target.value = "";
-                            }}
-                          />
-                          📸 Snap
-                        </label>
-                      )}
-                    </div>
-                  ))}
+                <div key={s} className="border-l-4 border-blue-500 pl-3 mb-6">
+                  {/* Session label */}
+                  <h4 className="inline-block px-3 py-1 mb-3 text-xs font-bold text-white bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.4)] uppercase tracking-wide">
+                    Session {s}
+                  </h4>
+
+                  {/* Houses list */}
+                  <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+                    {grouped[s].map((a, idx) => (
+                      <div
+                        key={a.id}
+                        className={`flex justify-between items-center py-3 px-4 ${
+                          idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                        } hover:bg-blue-50 transition-all duration-200`}
+                      >
+                        {/* House info */}
+                        <div className="text-[14px] text-gray-800 font-medium leading-snug">
+                          {a.house_no} {a.street_name}{" "}
+                          <span className="text-gray-500 font-normal">
+                            ({a.block})
+                          </span>
+                        </div>
+
+                        {/* Action buttons */}
+                        {doneIds.includes(a.id) ? (
+                          <div className="flex items-center gap-1 text-green-600 font-semibold text-sm">
+                            <span>✅</span> Done
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-1 text-blue-600 font-semibold text-sm cursor-pointer hover:text-blue-800 active:scale-95 transition-all">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              hidden
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) handleSnap(file, a);
+                                e.target.value = "";
+                              }}
+                            />
+                            {/* Camera icon */}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                              className="w-4 h-4"
+                            >
+                              <path d="M12 5c-3.86 0-7 3.14-7 7 0 1.63.56 3.13 1.5 4.32L5 19l2.68-1.5C8.87 18.44 10.37 19 12 19c3.86 0 7-3.14 7-7s-3.14-7-7-7zM9 12c0-1.66 1.34-3 3-3s3 1.34 3 3-1.34 3-3 3-3-1.34-3-3z" />
+                            </svg>
+                            Snap
+                          </label>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))
             )}
@@ -464,5 +499,6 @@ export default function RouteList() {
 
       <GuardBottomNav />
     </div>
+  </>
   );
 }
