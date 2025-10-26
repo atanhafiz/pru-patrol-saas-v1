@@ -55,24 +55,26 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-soft px-4">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white shadow-xl p-8 rounded-2xl w-full max-w-md"
-      >
-        <h2 className="text-3xl font-bold text-center mb-6 text-primary">
-          Welcome Back
-        </h2>
+<div className="min-h-screen flex items-center justify-center bg-soft px-4">
+  <form
+    onSubmit={handleLogin}
+    className="bg-white shadow-xl p-10 rounded-2xl w-full max-w-md border border-gray-100"
+  >
+    <h2 className="text-[26px] font-extrabold text-center mb-8 text-[#0B132B] tracking-tight">
+      🔒 Authorized Personnel Login Only
+    </h2>
 
-        {msg && (
-          <p
-            className={`text-sm text-center mb-4 ${
-              msg.startsWith("✅") ? "text-green-600" : "text-red-500"
-            }`}
-          >
-            {msg}
-          </p>
-        )}
+    {msg && (
+      <p
+        className={`text-sm text-center mb-4 ${
+          msg.startsWith("✅") ? "text-green-600" : "text-red-500"
+        }`}
+      >
+        {msg}
+      </p>
+    )}
+
+    {/* ...login form fields below this (email, password, etc.) */}
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-primary mb-1">
