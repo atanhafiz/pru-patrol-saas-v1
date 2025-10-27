@@ -23,7 +23,6 @@ export default function Dashboard() {
   useEffect(() => {
     fetchAssignments();
     fetchDashboardMetrics();
-    sendTelegramIntro();
   }, []);
 
 // 🚀 Auto-send Telegram welcome message (strict once per day)

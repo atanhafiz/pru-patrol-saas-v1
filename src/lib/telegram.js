@@ -1,98 +1,18 @@
-// ✅ AHE SmartPatrol – Telegram API helper
-// Unified helper to send both photo and text messages via Telegram Bot API.
-
-const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
-const CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
-const BASE_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
-
 /**
- * 🧠 Format caption ikut jenis mesej:
- * type = selfieIn | selfieOut | houseSnap | incident
+ * 🏢 Intro message – Auto send to group once per session (no duplicate)
  */
-export function buildCaption(type, data = {}) {
-  const { guardName, plateNo, lat, lng, house, street, block, title, description } = data;
+let telegramIntroSent = false; // ✅ Global flag (persist selama page belum reload)
 
-  // 🇲🇾 Timezone Malaysia (UTC+8)
-  const now = new Date();
-  const malaysiaTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-  const time = malaysiaTime.toLocaleString("en-MY", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-  // GPS check
-  const hasGPS = lat && lng && !isNaN(lat) && !isNaN(lng);
-  const locationText = hasGPS
-    ? `[Open in Google Maps](https://www.google.com/maps?q=${lat},${lng})`
-    : "🛰️ GPS Not Detected";
-
-  switch (type) {
-    case "selfieIn":
-      return `🚨 *Guard START PATROL*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${locationText}\n🕒 ${time}`;
-    case "selfieOut":
-      return `✅ *Guard END PATROL*\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${locationText}\n🕒 ${time}`;
-    case "houseSnap":
-      return `🏠 *Patrol Checkpoint*\n📍 ${house} ${street} (${block})\n👮 ${guardName}\n🏍️ ${plateNo}\n📌 ${locationText}\n🕓 ${time}`;
-    case "incident":
-      return `🚨 *INCIDENT REPORTED*\n📝 ${description || "No description"}\n👮 Reported By: ${guardName}\n📍 ${locationText}\n🕒 ${time}`;
-    default:
-      return `📝 ${description || "No details"}\n🕒 ${time}`;
-  }
-}
-
-/**
- * 📸 Send Photo to Telegram
- */
-export async function sendTelegramPhoto(photoUrl, caption) {
-  try {
-    const res = await fetch(`${BASE_URL}/sendPhoto`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        photo: photoUrl,
-        caption,
-        parse_mode: "Markdown",
-      }),
-    });
-    if (!res.ok) throw new Error(`sendPhoto failed (${res.status})`);
-    console.log("✅ Telegram photo sent");
-  } catch (err) {
-    console.error("❌ Telegram photo error:", err.message);
-  }
-}
-
-/**
- * 💬 Send Text-only message
- */
-export async function sendTelegramMessage(text) {
-  try {
-    const res = await fetch(`${BASE_URL}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text,
-        parse_mode: "Markdown",
-      }),
-    });
-    if (!res.ok) throw new Error(`sendMessage failed (${res.status})`);
-    console.log("✅ Telegram text sent");
-  } catch (err) {
-    console.error("❌ Telegram message error:", err.message);
-  }
-}
-
-/**
- * 🏢 Intro message – Auto send to group when system starts
- */
 export async function sendTelegramIntro() {
   try {
+    // 🧩 Elak hantar berulang
+    if (telegramIntroSent || sessionStorage.getItem("sentTelegramWelcome")) {
+      console.log("⏭️ Intro message already sent this session.");
+      return;
+    }
+
+    telegramIntroSent = true; // set sebelum fetch (supaya race condition tak jadi)
+
     const message = `
 🏢 *AHE SmartPatrol – Prima Residensi Utama®️*  
 ──────────────────────  
@@ -119,7 +39,35 @@ _Powered by AHE Technology Sdn Bhd_
 
     if (!res.ok) throw new Error(`Intro message failed (${res.status})`);
     console.log("✅ Intro message sent to Telegram group");
+
+    sessionStorage.setItem("sentTelegramWelcome", "true");
   } catch (err) {
     console.error("❌ Telegram intro error:", err.message);
+    telegramIntroSent = false; // reset kalau error (boleh cuba balik)
+  }
+}
+/**
+ * 💬 General message sender – reusable for all notifications
+ */
+const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+const CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+const BASE_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
+
+export async function sendTelegramMessage(text) {
+  try {
+    const res = await fetch(`${BASE_URL}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text,
+        parse_mode: "Markdown",
+      }),
+    });
+
+    if (!res.ok) throw new Error(`Send message failed (${res.status})`);
+    console.log("✅ Telegram message sent:", text.slice(0, 40));
+  } catch (err) {
+    console.error("❌ Telegram send error:", err.message);
   }
 }
