@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { getGuardChannel, closeGuardChannel } from "../../lib/guardChannel";
-import { sendTelegramIntro, sendTelegramMessage } from "../../lib/telegram";
+import { sendTelegramIntro, sendTelegramMessage, sendTelegramPhoto } from "../../lib/telegram";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Loader2 } from "lucide-react";
@@ -63,6 +63,7 @@ function PolylineTracker({ center, polylineRef, coordsRef }) {
 export default function RouteList() {
   const navigate = useNavigate();
   const location = useLocation();
+  const mapRef = useRef(null);
 
   const storedName = localStorage.getItem("guardName");
   const storedPlate = localStorage.getItem("plateNo");
@@ -269,6 +270,12 @@ const time = new Date().toLocaleString("en-MY", {
           : `✅ Patrol ENDED\n👮 ${guardName}\n🏍️ ${plateNo}\n📍 ${coords}\n🕒 ${time}`;
   
       await sendTelegramPhoto(url, caption);
+
+      // 🧭 Auto fly map to current guard position after selfie
+        if (guardPos && mapRef?.current) {
+          mapRef.current.flyTo(guardPos, 17, { animate: true, duration: 1.2 });
+        }
+
   
       toast.dismiss();
       toast.success("Selfie sent to Telegram!");
@@ -360,11 +367,12 @@ return (
 
           {/* Map Section */}
           <div className="h-[360px] rounded-xl overflow-hidden shadow bg-white mt-3">
-            <MapContainer
-              center={guardPos || [5.65, 100.5]}
-              zoom={16}
-              style={{ height: "100%", width: "100%" }}
-            >
+          <MapContainer
+                center={guardPos || [5.65, 100.5]}
+                zoom={16}
+                style={{ height: "100%", width: "100%" }}
+                whenCreated={(map) => (mapRef.current = map)}
+              >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <MapCenter center={guardPos} />
               <PolylineTracker
